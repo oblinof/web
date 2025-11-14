@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>Extractivist Realism 1.0</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Windows 3.0/95 grayscale aesthetic */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #c0c0c0; /* Classic Windows background grey */
+            color: #000000; 
+        }
+        .container-glitch {
+            max-width: 1200px;
+        }
+        /* Classic Beveled Panel Effect (Simulated 3D) */
+        .classic-panel {
+            background-color: #c0c0c0;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            box-shadow: 1px 1px 0 #000000; /* Subtle drop shadow for depth */
+        }
+        
+        /* Styles for the canvas/editor - Dark "Screen" */
+        #editorCanvas {
+            border: 2px solid #000000;
+            background-color: #000000; /* Black screen background */
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Classic Beveled Button (Simulated Push) */
+        .btn-classic {
+            background-color: #c0c0c0;
+            color: #000000;
+            font-weight: bold;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            transition: all 0.05s ease-in-out;
+        }
+
+        /* Hover effect: simulate the button being pressed */
+        .btn-classic:hover {
+            background-color: #d1d1d1;
+        }
+        
+        /* Active effect: invert the border for the pressed look */
+        .btn-classic:active {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
+            transform: translateY(1px) translateX(1px); /* Slight shift */
+        }
+
+        /* Inputs and Selects styling */
+        .classic-input {
+            background-color: #ffffff;
+            border-top: 1px solid #808080;
+            border-left: 1px solid #808080;
+            border-right: 1px solid #ffffff;
+            border-bottom: 1px solid #ffffff;
+            color: #000000;
+        }
+        .classic-input:focus {
+            outline: 1px solid #000000;
+            box-shadow: none;
+        }
+
+        /* Message Box style */
+        #messageBox {
+            background-color: #ffffff;
+            border: 1px solid #000000;
+            color: #000000;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="container-glitch mx-auto">
+        <div class="classic-panel p-2 mb-6 border-b-4 border-r-4 border-l-0 border-t-0">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-center text-[#000000]">
+                Extractivist Realism 1.0
+            </h1>
+        </div>
+
+        <!-- Controls and Canvas -->
+        <div class="flex flex-col lg:flex-row gap-6">
+            
+            <!-- Control Panel -->
+            <div class="control-panel lg:w-1/3 classic-panel p-4 space-y-4">
+                
+                <h2 class="text-xl font-bold border-b border-black pb-2 mb-4">Controls</h2>
+                
+                <!-- 1. Upload Image -->
+                <div>
+                    <label for="imageUpload" class="block text-base font-medium mb-1">1. Load Original Image</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="w-full p-1 classic-input">
+                    <button id="resetButton" class="btn-classic w-full p-2 text-sm mt-2">
+                        Restore Original
+                    </button>
+                </div>
+
+                <!-- 2. Effect Selection -->
+                <div>
+                    <label for="effectSelector" class="block text-base font-medium mb-1">2. Select Effect</label>
+                    <select id="effectSelector" class="w-full p-2 classic-input appearance-none cursor-pointer">
+                        <!-- New Effect List (Starting from old ID 6) -->
+                        <option value="1">1. Chromatic Noise</option>
+                        <option value="2">2. Random Block Break</option>
+                        <option value="3">3. Heavy Color Quantization</option>
+                        <option value="4">4. Lossy JPEG Compression (New)</option>
+                        <option value="5">5. Vertical Pixel Sort (New)</option>
+                        <option value="6">6. Partial Inversion</option>
+                        <option value="7">7. Wavy Offset</option>
+                        <option value="8">8. Pixel Ribbons (Fine)</option>
+                        <option value="9">9. Pixel Ribbons (Thick)</option>
+                        <option value="10">10. Color Bleed Artifacts (New)</option>
+                        <option value="11">11. Red Corruption</option>
+                        <option value="12">12. Random Color Mix</option>
+                        <option value="13">13. Distorted Mirror</option>
+                        <option value="14">14. Slow Digital Wave</option>
+                        <option value="15">15. Deep Disconnection</option>
+                        <option value="16">16. Precarious Dream Simulation</option>
+                        <option value="17">17. Pixel Sort (Horizontal)</option>
+                        <option value="18">18. Hue Shift</option>
+                        <option value="19">19. Strict Posterization</option>
+                        <option value="20">20. Chaotic Generative Fill Simulation</option>
+                    </select>
+                </div>
+
+                <!-- 3. Intensity Control Slider -->
+                <div>
+                    <label for="intensitySlider" class="block text-base font-medium mb-1">3. Intensity Control (<span id="intensityValue">50</span>)</label>
+                    <input type="range" id="intensitySlider" min="0" max="100" value="50" class="w-full h-2 classic-input appearance-none cursor-pointer">
+                </div>
+                
+                <!-- 4. Commit Button (Apply Cumulative) -->
+                <button id="commitButton" class="btn-classic w-full p-3 text-lg">
+                    4. Apply Glitch (Commit)
+                </button>
+
+                <!-- 5. Export Button -->
+                <button id="exportButton" class="btn-classic w-full p-3 text-lg mt-4">
+                    5. Export Glitched Image (.png)
+                </button>
+
+                <!-- Message Area (No Alert!) -->
+                <div id="messageBox" class="text-sm p-3 mt-4 classic-panel border-2 border-black hidden"></div>
+            </div>
+
+            <!-- Canvas / Preview Area -->
+            <div class="lg:w-2/3 flex justify-center items-center classic-panel p-2">
+                <canvas id="editorCanvas" class="w-full h-auto"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables and Firebase configuration (included for structure, not used)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+        // DOM References
+        const imageUpload = document.getElementById('imageUpload');
+        const editorCanvas = document.getElementById('editorCanvas');
+        const ctx = editorCanvas.getContext('2d', { willReadFrequently: true });
+        const intensitySlider = document.getElementById('intensitySlider');
+        const intensityValueDisplay = document.getElementById('intensityValue');
+        const effectSelector = document.getElementById('effectSelector');
+        const commitButton = document.getElementById('commitButton');
+        const resetButton = document.getElementById('resetButton');
+        const exportButton = document.getElementById('exportButton');
+        const messageBox = document.getElementById('messageBox');
+
+        let originalImage = null;
+        let originalImageData = null;
+        let currentImageData = null;
+
+        // --- Glitch Utilities ---
+
+        /**
+         * Displays a message in the designated area (instead of using alert()).
+         * @param {string} msg Message to display.
+         * @param {boolean} isError Whether the message is an error.
+         */
+        function showMessage(msg, isError = false) {
+            messageBox.textContent = msg;
+            messageBox.classList.remove('hidden');
+            if (isError) {
+                messageBox.style.backgroundColor = '#ff0000'; 
+                messageBox.style.color = '#ffffff';
+                messageBox.style.border = '1px solid #000000';
+            } else {
+                messageBox.style.backgroundColor = '#ffffff'; 
+                messageBox.style.color = '#000000';
+                messageBox.style.border = '1px solid #000000';
+            }
+            if (!msg.includes('Applied cumulatively')) {
+                 setTimeout(() => messageBox.classList.add('hidden'), 5000);
+            }
+        }
+
+        /**
+         * Clones ImageData.
+         * @param {ImageData} imageData The image data.
+         * @returns {ImageData} A copy of the data.
+         */
+        function cloneImageData(imageData) {
+            return new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+        }
+        
+        // Function to calculate brightness (luminosity)
+        const getBrightness = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+
+        // --- Core Glitch Algorithms (Refactored) ---
+
+        /**
+         * Applies a random shift to RGB channels.
+         */
+        function rgbShift(imageData, intensity, seed) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const maxShift = Math.floor(intensity * 30 * seed);
+            const originalData = new Uint8ClampedArray(data);
+
+            const getPixelIndex = (x, y, channel) => {
+                x = (x % w + w) % w;
+                y = (y % h + h) % h;
+                return (y * w + x) * 4 + channel;
+            };
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const i = getPixelIndex(x, y, 0); 
+                    
+                    const rShift = Math.floor(Math.sin(y * 0.1 * intensity * seed) * maxShift);
+                    const gShift = Math.floor(Math.cos(x * 0.1 * intensity * seed) * maxShift);
+                    const bShift = Math.floor(Math.sin(x * y * 0.001 * intensity) * maxShift);
+
+                    data[i] = originalData[getPixelIndex(x + rShift, y, 0)];
+                    data[i + 1] = originalData[getPixelIndex(x, y + gShift, 1)];
+                    data[i + 2] = originalData[getPixelIndex(x + bShift, y + bShift, 2)];
+                }
+            }
+        }
+
+        /**
+         * Applies a horizontal data block shift.
+         */
+        function blockShift(imageData, intensity, blockSize) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const originalData = new Uint8ClampedArray(data);
+            const maxShift = Math.floor(intensity * 100);
+            const blockHeight = Math.max(1, Math.floor(h / blockSize));
+            
+            for (let y = 0; y < h; y += blockHeight) {
+                if (Math.random() < intensity * 0.5) { 
+                    const shiftX = Math.floor(Math.random() * maxShift * 2) - maxShift;
+                    
+                    for (let row = 0; row < blockHeight; row++) {
+                        const currentRow = y + row;
+                        if (currentRow >= h) break;
+
+                        for (let x = 0; x < w; x++) {
+                            const srcX = (x + shiftX) % w;
+                            const srcY = currentRow;
+                            
+                            const destIndex = (currentRow * w + x) * 4;
+                            const srcIndex = (srcY * w + srcX) * 4;
+
+                            if (srcIndex >= 0 && srcIndex < originalData.length) {
+                                data[destIndex] = originalData[srcIndex];
+                                data[destIndex + 1] = originalData[srcIndex + 1];
+                                data[destIndex + 2] = originalData[srcIndex + 2];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /**
+         * Applies color noise and reduces the color palette (soft posterization).
+         */
+        function colorNoiseAndQuantize(imageData, intensity, quantizationLevels) {
+            const data = imageData.data;
+            // Fewer quantization levels means more posterization (fewer colors)
+            const numLevels = Math.max(2, Math.floor(255 * (1 - intensity * 0.8) * quantizationLevels));
+            const levelStep = 255 / (numLevels - 1);
+
+            for (let i = 0; i < data.length; i += 4) {
+                const noiseFactor = (Math.random() - 0.5) * intensity * 100;
+
+                data[i] = Math.round((data[i] + noiseFactor) / levelStep) * levelStep;
+                data[i + 1] = Math.round((data[i + 1] + noiseFactor) / levelStep) * levelStep;
+                data[i + 2] = Math.round((data[i + 2] + noiseFactor) / levelStep) * levelStep;
+                
+                data[i] = Math.min(255, Math.max(0, data[i]));
+                data[i + 1] = Math.min(255, Math.max(0, data[i + 1]));
+                data[i + 2] = Math.min(255, Math.max(0, data[i + 2]));
+
+                if (Math.random() < intensity * 0.05) {
+                    data[i] = data[i + 2]; 
+                }
+            }
+        }
+        
+        /**
+         * Simulates an old AI "dreaming" by applying decay and low fidelity.
+         */
+        function dreamDecay(imageData, intensity) {
+            blockShift(imageData, intensity * 2.5, 8);
+            colorNoiseAndQuantize(imageData, intensity * 1.5, 3);
+
+            const data = imageData.data;
+            const burnFactor = intensity * 0.5;
+            for (let i = 0; i < data.length; i += 4) {
+                if (Math.random() < burnFactor) {
+                    data[i] = Math.min(255, data[i] + 100);
+                    data[i + 1] = 0;
+                }
+                const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+                data[i] = data[i] + (data[i] - avg) * burnFactor;
+                data[i + 1] = data[i + 1] + (data[i + 1] - avg) * burnFactor;
+                data[i + 2] = data[i + 2] + (data[i + 2] - avg) * burnFactor;
+            }
+        }
+        
+        // Utility for RGB to HSL (needed for Hue Shift)
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) { h = s = 0; } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return [h * 360, s, l]; 
+        }
+
+        // Utility for HSL to RGB
+        function hslToRgb(h, s, l) {
+            let r, g, b;
+            h /= 360;
+            if (s === 0) { r = g = b = l; } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1 / 3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1 / 3);
+            }
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+        
+        // --- NEW COMPRESSION & SORTING ALGORITHMS ---
+
+        /**
+         * 4. Lossy JPEG Compression Simulation (Block Artifacts)
+         */
+        function lossyCompression(imageData, intensity) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const blockSize = Math.max(4, Math.floor(intensity * 16)); // Block size 4x4 up to 16x16
+
+            for (let y = 0; y < h; y += blockSize) {
+                for (let x = 0; x < w; x += blockSize) {
+                    let sumR = 0, sumG = 0, sumB = 0;
+                    let count = 0;
+
+                    // Calculate average color for the block
+                    for (let blockY = y; blockY < y + blockSize && blockY < h; blockY++) {
+                        for (let blockX = x; blockX < x + blockSize && blockX < w; blockX++) {
+                            const i = (blockY * w + blockX) * 4;
+                            sumR += data[i];
+                            sumG += data[i + 1];
+                            sumB += data[i + 2];
+                            count++;
+                        }
+                    }
+                    
+                    if (count === 0) continue;
+
+                    const avgR = sumR / count;
+                    const avgG = sumG / count;
+                    const avgB = sumB / count;
+
+                    // Fill the block with the average color (compression artifact)
+                    for (let blockY = y; blockY < y + blockSize && blockY < h; blockY++) {
+                        for (let blockX = x; blockX < x + blockSize && blockX < w; blockX++) {
+                            const i = (blockY * w + blockX) * 4;
+                            
+                            // Apply the averaged color, but slightly perturb it (smudge)
+                            data[i] = avgR + (Math.random() - 0.5) * intensity * 20;
+                            data[i + 1] = avgG + (Math.random() - 0.5) * intensity * 20;
+                            data[i + 2] = avgB + (Math.random() - 0.5) * intensity * 20;
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * 5. Vertical Pixel Sort
+         */
+        function verticalPixelSort(imageData, intensity) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            
+            // Threshold: 20 (strong) to 180 (soft)
+            const threshold = 20 + (1 - intensity) * 160; 
+
+            for (let x = 0; x < w; x++) {
+                let start = -1;
+                for (let y = 0; y <= h; y++) {
+                    const i = (y * w + x) * 4;
+                    const brightness = (y < h) ? getBrightness(data[i], data[i+1], data[i+2]) : 0;
+                    
+                    if (start === -1 && brightness > threshold && y < h) {
+                        start = y;
+                    } else if (start !== -1 && (brightness < threshold || y === h)) {
+                        const end = y;
+                        const segmentLength = end - start;
+                        
+                        if (segmentLength > 1) {
+                            const segment = [];
+                            for (let k = 0; k < segmentLength; k++) {
+                                const index = ((start + k) * w + x) * 4;
+                                segment.push({
+                                    r: data[index],
+                                    g: data[index+1],
+                                    b: data[index+2],
+                                    brightness: getBrightness(data[index], data[index+1], data[index+2])
+                                });
+                            }
+                            
+                            // Sort the segment by brightness (random direction)
+                            const sortDir = Math.random() < 0.5 ? 1 : -1;
+                            segment.sort((a, b) => sortDir * (a.brightness - b.brightness));
+
+                            // Place sorted pixels back
+                            for (let k = 0; k < segmentLength; k++) {
+                                const index = ((start + k) * w + x) * 4;
+                                data[index] = segment[k].r;
+                                data[index+1] = segment[k].g;
+                                data[index+2] = segment[k].b;
+                            }
+                        }
+                        start = -1; 
+                    }
+                }
+            }
+        }
+
+        /**
+         * 10. Color Bleed Artifacts (Data Leakage)
+         */
+        function colorBleedArtifacts(imageData, intensity) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const originalData = new Uint8ClampedArray(data);
+            const bleedAmount = Math.floor(intensity * 10); // Max 10px bleed
+
+            for (let y = 1; y < h; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    const i = (y * w + x) * 4;
+                    const iPrev = (y * w + (x - 1)) * 4;
+                    
+                    const brightnessDiff = Math.abs(getBrightness(originalData[i], originalData[i+1], originalData[i+2]) - 
+                                                    getBrightness(originalData[iPrev], originalData[iPrev+1], originalData[iPrev+2]));
+
+                    // Only bleed heavily on high-contrast edges
+                    if (brightnessDiff > 50) { 
+                        const channelToBleed = Math.floor(Math.random() * 3); // R, G, or B (0, 1, 2)
+                        
+                        // Copy the channel data from the pixel to the left (bleed)
+                        for (let k = 1; k <= bleedAmount; k++) {
+                            const destIndex = (y * w + x + k) * 4;
+                            if (destIndex + 3 < data.length) {
+                                // Slowly replace the color of the adjacent pixels with the bleeding channel
+                                data[destIndex + channelToBleed] = originalData[iPrev + channelToBleed];
+                                
+                                // Reduce the other channels in the destination to emphasize the bleed
+                                const otherChannel1 = (channelToBleed + 1) % 3;
+                                const otherChannel2 = (channelToBleed + 2) % 3;
+                                data[destIndex + otherChannel1] *= (1 - 0.05 * intensity);
+                                data[destIndex + otherChannel2] *= (1 - 0.05 * intensity);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // --- Existing Glitch Algorithms (Kept for completeness) ---
+
+        function hueShift(imageData, intensity) {
+            const data = imageData.data;
+            const shiftDegrees = intensity * 360 * 0.5;
+            for (let i = 0; i < data.length; i += 4) {
+                const [h, s, l] = rgbToHsl(data[i], data[i+1], data[i+2]);
+                let newH = (h + shiftDegrees) % 360;
+                if (newH < 0) newH += 360;
+                const [r, g, b] = hslToRgb(newH, s, l);
+                data[i] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+            }
+        }
+        
+        function posterizeStrict(imageData, intensity) {
+            const data = imageData.data;
+            const numLevels = Math.max(2, Math.floor(16 - intensity * 14)); 
+            const levelStep = 255 / (numLevels - 1);
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.round(data[i] / levelStep) * levelStep;
+                data[i + 1] = Math.round(data[i + 1] / levelStep) * levelStep;
+                data[i + 2] = Math.round(data[i + 2] / levelStep) * levelStep;
+            }
+        }
+
+        function pixelSortHorizontal(imageData, intensity) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const threshold = 20 + (1 - intensity) * 160; 
+
+            for (let y = 0; y < h; y++) {
+                let start = -1;
+                for (let x = 0; x <= w; x++) {
+                    const i = (y * w + x) * 4;
+                    const brightness = (x < w) ? getBrightness(data[i], data[i+1], data[i+2]) : 0;
+                    
+                    if (start === -1 && brightness > threshold && x < w) {
+                        start = x;
+                    } else if (start !== -1 && (brightness < threshold || x === w)) {
+                        const end = x;
+                        const segmentLength = end - start;
+                        
+                        if (segmentLength > 1) {
+                            const segment = [];
+                            for (let k = 0; k < segmentLength; k++) {
+                                const index = (y * w + start + k) * 4;
+                                segment.push({
+                                    r: data[index],
+                                    g: data[index+1],
+                                    b: data[index+2],
+                                    brightness: getBrightness(data[index], data[index+1], data[index+2])
+                                });
+                            }
+                            
+                            const sortDir = Math.random() < 0.5 ? 1 : -1;
+                            segment.sort((a, b) => sortDir * (a.brightness - b.brightness));
+
+                            for (let k = 0; k < segmentLength; k++) {
+                                const index = (y * w + start + k) * 4;
+                                data[index] = segment[k].r;
+                                data[index+1] = segment[k].g;
+                                data[index+2] = segment[k].b;
+                            }
+                        }
+                        start = -1;
+                    }
+                }
+            }
+        }
+        
+        function chaoticFillSimulation(imageData, intensity) {
+            const data = imageData.data;
+            const w = imageData.width;
+            const h = imageData.height;
+            const corruptZoneY = Math.floor(h * 0.2 + Math.random() * h * 0.6);
+            const corruptZoneHeight = Math.floor(h * 0.2 * intensity) + 10;
+            const noiseLevel = intensity * 0.7;
+            
+            for (let y = corruptZoneY; y < corruptZoneY + corruptZoneHeight; y++) {
+                if (y >= h) break;
+                
+                const patternSourceY = (y + Math.floor(Math.sin(y * 0.1) * h * noiseLevel * 0.1) + h) % h;
+                const patternShiftX = Math.floor(intensity * w * 0.1);
+
+                for (let x = 0; x < w; x++) {
+                    const centerFactor = 1 - Math.abs(y - (corruptZoneY + corruptZoneHeight/2)) / (corruptZoneHeight/2);
+                    
+                    if (Math.random() < intensity * 0.1 * centerFactor) {
+                        const destIndex = (y * w + x) * 4;
+                        const srcX = (x + patternShiftX) % w;
+                        const srcIndex = (patternSourceY * w + srcX) * 4;
+                        
+                        if (srcIndex < data.length && srcIndex >= 0) {
+                            data[destIndex] = data[srcIndex];
+                            data[destIndex + 1] = data[srcIndex + 1];
+                            data[destIndex + 2] = data[srcIndex + 2];
+                        }
+                        
+                        if (Math.random() < noiseLevel) {
+                            data[destIndex + Math.floor(Math.random() * 3)] = Math.floor(Math.random() * 255);
+                        }
+                         if (x % Math.max(1, Math.floor(20 * (1-intensity))) === 0) {
+                            data[destIndex + 0] = data[destIndex + 1] = data[destIndex + 2];
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Main Glitch Function with Updated Switch ---
+
+        function applyGlitch(commit = false) {
+            if (!currentImageData) {
+                showMessage('Please upload an image first.', true);
+                return;
+            }
+
+            const intensity = intensitySlider.value / 100;
+            const effectType = effectSelector.value;
+            
+            let workingData = cloneImageData(currentImageData);
+            
+            // Apply the selected effect (New indexing 1-20)
+            switch(effectType) {
+                case '1': colorNoiseAndQuantize(workingData, intensity * 0.6, 10); break; // Chromatic Noise (Old 6)
+                case '2': blockShift(workingData, intensity * 0.8, 15); blockShift(workingData, intensity * 0.2, 100); break; // Random Block Break (Old 7)
+                case '3': colorNoiseAndQuantize(workingData, intensity * 0.1, 2); break; // Heavy Color Quantization (Old 8)
+                
+                case '4': lossyCompression(workingData, intensity); break; // NEW: Lossy JPEG Compression
+                case '5': verticalPixelSort(workingData, intensity); break; // NEW: Vertical Pixel Sort
+
+                case '6': // Partial Inversion (Old 11)
+                    for(let i = 0; i < workingData.data.length; i += 4) { if (Math.random() < intensity * 0.5) { workingData.data[i] = 255 - workingData.data[i]; workingData.data[i + 1] = 255 - workingData.data[i + 1]; workingData.data[i + 2] = 255 - workingData.data[i + 2]; } }
+                    rgbShift(workingData, intensity * 0.3, 1);
+                    break;
+                case '7': rgbShift(workingData, intensity * 1.8, 4); break; // Wavy Offset (Old 12)
+                case '8': blockShift(workingData, intensity * 1.5, 150); break; // Pixel Ribbons (Fine) (Old 13)
+                case '9': blockShift(workingData, intensity * 1.5, 10); break; // Pixel Ribbons (Thick) (Old 14)
+                
+                case '10': colorBleedArtifacts(workingData, intensity); break; // NEW: Color Bleed Artifacts
+
+                case '11': // Red Corruption (Old 16)
+                    rgbShift(workingData, intensity, 1);
+                    for(let i = 0; i < workingData.data.length; i += 4) { workingData.data[i] = Math.max(0, workingData.data[i] + intensity * 100 * Math.cos(i * 0.0001)); }
+                    break;
+                case '12': // Random Color Mix (Old 17)
+                    for(let i = 0; i < workingData.data.length; i += 4) { if (Math.random() < intensity * 0.2) { [workingData.data[i], workingData.data[i+1], workingData.data[i+2]] = [workingData.data[i+1], workingData.data[i+2], workingData.data[i]]; } }
+                    blockShift(workingData, intensity * 0.5, 50);
+                    break;
+                case '13': // Distorted Mirror (Old 18)
+                    blockShift(workingData, intensity, 20);
+                    const w = workingData.width;
+                    const h = workingData.height;
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w / 2; x++) {
+                            if (Math.random() < intensity * 0.1) {
+                                const iLeft = (y * w + x) * 4;
+                                const iRight = (y * w + (w - 1 - x)) * 4;
+                                workingData.data[iLeft] = workingData.data[iRight]; workingData.data[iLeft + 1] = workingData.data[iRight + 1]; workingData.data[iLeft + 2] = workingData.data[iRight + 2];
+                            }
+                        }
+                    }
+                    break;
+                case '14': rgbShift(workingData, intensity * 0.5, 2); blockShift(workingData, intensity * 0.4, 60); break; // Slow Digital Wave (Old 19)
+                case '15': rgbShift(workingData, intensity * 3, 1); blockShift(workingData, intensity * 1.5, 20); colorNoiseAndQuantize(workingData, intensity * 0.8, 5); break; // Deep Disconnection (Old 20)
+                
+                case '16': dreamDecay(workingData, intensity); break; // Precarious Dream Simulation (Old 21)
+
+                case '17': pixelSortHorizontal(workingData, intensity); break; // Pixel Sort (Horizontal) (Old 22)
+                case '18': hueShift(workingData, intensity); break; // Hue Shift (Old 23)
+                case '19': posterizeStrict(workingData, intensity); break; // Strict Posterization (Old 24)
+                case '20': chaoticFillSimulation(workingData, intensity); break; // Chaotic Generative Fill Simulation (Old 25)
+                
+                default:
+                    break;
+            }
+
+            ctx.putImageData(workingData, 0, 0);
+            
+            if (commit) {
+                currentImageData = workingData;
+                showMessage(`Effect ${effectType} applied cumulatively. Ready for the next one.`);
+            }
+        }
+
+
+        // --- Event Handlers (Unchanged) ---
+
+        imageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
+                    let w = originalImage.width;
+                    let h = originalImage.height;
+                    const maxWidth = 800; 
+
+                    if (w > maxWidth) {
+                        h = (h / w) * maxWidth;
+                        w = maxWidth;
+                    }
+
+                    editorCanvas.width = w;
+                    editorCanvas.height = h;
+                    
+                    ctx.drawImage(originalImage, 0, 0, w, h);
+                    
+                    originalImageData = ctx.getImageData(0, 0, w, h);
+                    currentImageData = cloneImageData(originalImageData); 
+                    
+                    applyGlitch(false);
+                    showMessage('Image loaded! Use "Apply Glitch (Commit)" to stack effects.');
+                };
+                originalImage.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        resetButton.addEventListener('click', () => {
+            if (!originalImageData) {
+                showMessage('No original image to restore.', true);
+                return;
+            }
+            currentImageData = cloneImageData(originalImageData);
+            ctx.putImageData(currentImageData, 0, 0);
+            showMessage('Image restored to its original state.');
+        });
+
+
+        intensitySlider.addEventListener('input', () => {
+            intensityValueDisplay.textContent = intensitySlider.value;
+            if (originalImage) {
+                applyGlitch(false); 
+            }
+        });
+
+        effectSelector.addEventListener('change', () => {
+            if (originalImage) {
+                applyGlitch(false); 
+            }
+        });
+        
+        commitButton.addEventListener('click', () => {
+            if (originalImage) {
+                applyGlitch(true); 
+            }
+        });
+
+
+        exportButton.addEventListener('click', () => {
+            if (!currentImageData) {
+                showMessage('No glitched image to export.', true);
+                return;
+            }
+            
+            const dataURL = editorCanvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = `extractivist-realism-${effectSelector.value}-${intensitySlider.value}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showMessage('Image exported successfully as PNG.');
+        });
+        
+        // Initialization and welcome setup
+        window.onload = () => {
+            editorCanvas.width = 600;
+            editorCanvas.height = 400;
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, editorCanvas.width, editorCanvas.height);
+            ctx.fillStyle = '#c0c0c0';
+            ctx.font = '24px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Upload an image to start glitching', editorCanvas.width / 2, editorCanvas.height / 2);
+            showMessage('Welcome to Extractivist Realism 1.0. Upload an image and use "Apply Glitch" to accumulate effects.');
+        };
+
+    </script>
+</body>
+</html>

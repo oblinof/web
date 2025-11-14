@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glitch Entity Visualizer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        body {
+            font-family: 'Press Start+2P', monospace; 
+            background-color: #000000;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #39FF14; 
+        }
+
+        #top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(2px);
+            z-index: 100;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            font-size: 0.6rem; 
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            filter: 
+                brightness(1.5) 
+                contrast(2.0) 
+                saturate(2.0) 
+                hue-rotate(var(--dynamic-hue, 0deg));
+            transition: filter 0.5s linear; 
+        }
+
+        #visualizerCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .canvas-container::after {
+            content: '';
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.4; 
+            pointer-events: none;
+            z-index: 10;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.6) 50%), 
+                linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px); 
+            background-size: 100% 2px, 2px 100%; 
+            
+            box-shadow: 0 0 150px var(--dynamic-shadow-color, rgba(57, 255, 20, 0.6)) inset; 
+            animation: 
+                flicker 0.08s infinite alternate, 
+                vignette 4s infinite alternate; 
+            transition: box-shadow 0.5s linear; 
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.35; }
+            100% { opacity: 0.45; }
+        }
+
+        @keyframes vignette {
+            0% { box-shadow: 0 0 150px var(--dynamic-shadow-color, rgba(57, 255, 20, 0.6)) inset; }
+            50% { box-shadow: 0 0 170px var(--dynamic-shadow-color-alt, rgba(57, 255, 20, 0.7)) inset; }
+            100% { box-shadow: 0 0 150px var(--dynamic-shadow-color, rgba(57, 255, 20, 0.6)) inset; }
+        }
+
+        .control-element {
+            background-color: transparent;
+            border: 1px solid #39FF14; 
+            color: #39FF14;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+        .control-element:focus {
+            outline: none;
+            box-shadow: 0 0 5px #39FF14;
+        }
+        
+        #toggleUFOButton, #resetButton {
+            font-size: 1.2rem;
+            line-height: 1;
+            padding: 0.2rem 0.5rem;
+            background-color: rgba(57, 255, 20, 0.1);
+        }
+        #toggleUFOButton.active {
+            box-shadow: 0 0 15px #39FF14; 
+        }
+    </style>
+</head>
+<body class="p-0 m-0">
+
+    <div id="top-bar" class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            
+            <div class="flex items-center space-x-1">
+                <label for="rootNoteSelect" class="text-xs hidden sm:block">ROOT NOTE:</label>
+                <select id="rootNoteSelect" class="control-element"></select>
+            </div>
+            
+            <div class="flex items-center space-x-1">
+                <label for="scaleSelect" class="text-xs hidden sm:block">SCALE:</label>
+                <select id="scaleSelect" class="control-element">
+                    <option value="pentatonic_minor">PENTA MINOR</option>
+                    <option value="major">MAJOR</option>
+                    <option value="lydian">LYDIAN</option>
+                    <option value="harmonic_minor">H. MINOR</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+             <button id="resetButton" class="control-element" title="Clear Drawing">
+                <span class="text-xs">RESET</span>
+            </button>
+            <button id="toggleUFOButton" class="control-element active" title="Toggle Psychic Anomaly">
+                👾
+            </button>
+        </div>
+       
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="visualizerCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('visualizerCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.querySelector('.canvas-container');
+        let width, height;
+        let isRunning = false;
+        let isDrawing = false;
+        let showUFO = true;
+        
+        let lastX = 0;
+        let lastY = 0;
+        let lastTime = 0;
+        let lastFrameTime = performance.now(); 
+
+        let psychedelicHue = 0; 
+        let trailParticles = []; 
+        const MAX_RGB_INTENSITY = 180; 
+
+        let droneSynth = null; 
+        let drawSynth = null; 
+        let delay = null;
+        let reverb = null;
+        let limiter = null;
+        
+        let lastNoteTime = 0;
+        const noteMinInterval = 0.01; 
+
+        const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const SCALES_DATA = {
+            'pentatonic_minor': [0, 3, 5, 7, 10], 
+            'major': [0, 2, 4, 5, 7, 9, 11],
+            'lydian': [0, 2, 4, 6, 7, 9, 11], 
+            'harmonic_minor': [0, 2, 3, 5, 7, 8, 11]
+        };
+        let currentScaleIntervals = SCALES_DATA['pentatonic_minor'];
+        let currentScale = [];
+
+        let ufo = {
+            x: 0, y: 0, 
+            vx: 0.4, vy: 0.3, 
+            radius: 20,
+            eyeDistance: 8, 
+            pupilSize: 3, 
+            eyeTarget: { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } }, 
+            eyePupilPos: { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } },
+            eyeUpdateTimer: 0,
+            eyeUpdateInterval: 0.5, 
+            dirChangeTimer: 0, 
+            dirChangeInterval: 3.0, 
+        };
+        let ufoNoteIndex = 0; 
+        let noiseOffset = 0; 
+
+        function getRGBColor(hue, alpha, maxVal = MAX_RGB_INTENSITY) {
+            const f = (n) => {
+                const k = (n + hue / 60) % 6;
+                const v = 1 - Math.max(0, Math.min(k, 4 - k, 1)); 
+                return Math.round(v * maxVal); 
+            };
+            
+            const r = f(5);
+            const g = f(3);
+            const b = f(1);
+
+            return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+        }
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            ufo.x = Math.min(Math.max(ufo.x, ufo.radius), width - ufo.radius);
+            ufo.y = Math.min(Math.max(ufo.y, ufo.radius), height - ufo.radius);
+        }
+
+        function map(value, inMin, inMax, outMin, outMax, clamp = false) {
+            const mapped = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+            if (clamp) {
+                return Math.max(outMin, Math.min(outMax, mapped));
+            }
+            return mapped;
+        }
+
+        function simpleNoise(x) {
+            return Math.sin(x * 0.5) * Math.cos(x * 0.3) + Math.sin(x * 1.5);
+        }
+        
+        function initializeScale() {
+            if (typeof Tone === 'undefined') return;
+            currentScale = [];
+            const rootNoteName = document.getElementById('rootNoteSelect').value;
+            const scaleType = document.getElementById('scaleSelect').value;
+            currentScaleIntervals = SCALES_DATA[scaleType];
+
+            const rootMidi = Tone.Frequency(rootNoteName + '3').toMidi();
+            const minMidi = Tone.Frequency('C2').toMidi();
+            const maxMidi = Tone.Frequency('C5').toMidi();
+            
+            for (let octave = -1; octave <= 2; octave++) { 
+                currentScaleIntervals.forEach(interval => {
+                    const midi = rootMidi + interval + octave * 12;
+                    if (midi >= minMidi && midi <= maxMidi) {
+                        currentScale.push(Tone.Midi(midi).toNote());
+                    }
+                });
+            }
+            if (currentScale.length === 0) {
+                 currentScale = ['G3', 'Bb3', 'C4', 'D4', 'F4'];
+            }
+        }
+
+        function getNoteAndModulation(x, y) {
+            const noteIndex = Math.floor(map(x, 0, width, 0, currentScale.length - 1));
+            const note = currentScale[Math.max(0, Math.min(currentScale.length - 1, noteIndex))];
+            const modulationIndex = map(y, 0, height, 8, 1.5); 
+            
+            return { note, modulationIndex };
+        }
+
+        function setNewEyeTarget() {
+            const eyeRadius = 4; 
+            const maxPupilOffset = eyeRadius - ufo.pupilSize - 1; 
+            
+            const getRandomPoint = () => {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * maxPupilOffset; 
+                return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
+            };
+            ufo.eyeTarget.left = getRandomPoint();
+            ufo.eyeTarget.right = getRandomPoint();
+        }
+
+
+        function updateUFO(deltaTime) {
+            if (!showUFO || typeof Tone === 'undefined') return;
+
+            ufo.dirChangeTimer += deltaTime;
+            if (ufo.dirChangeTimer >= ufo.dirChangeInterval) {
+                const speed = 0.4 + Math.random() * 0.4; 
+                const angle = Math.random() * Math.PI * 2;
+                ufo.vx = Math.cos(angle) * speed;
+                ufo.vy = Math.sin(angle) * speed;
+                ufo.dirChangeTimer = 0;
+                ufo.dirChangeInterval = 2.0 + Math.random() * 5.0; 
+            }
+
+            ufo.x += ufo.vx;
+            ufo.y += ufo.vy;
+
+            if (ufo.x - ufo.radius < 0 || ufo.x + ufo.radius > width) { 
+                ufo.vx *= -1;
+                ufo.x = Math.min(Math.max(ufo.x, ufo.radius), width - ufo.radius);
+                ufo.dirChangeTimer = ufo.dirChangeInterval; 
+            }
+            if (ufo.y - ufo.radius < 0 || ufo.y + ufo.radius > height) { 
+                ufo.vy *= -1;
+                ufo.y = Math.min(Math.max(ufo.y, ufo.radius), height - ufo.radius);
+                ufo.dirChangeTimer = ufo.dirChangeInterval;
+            }
+            
+            noiseOffset += 0.05; 
+            psychedelicHue = (psychedelicHue + 50.0) % 360; 
+
+            ufo.eyeUpdateTimer += deltaTime;
+            if (ufo.eyeUpdateTimer >= ufo.eyeUpdateInterval) {
+                setNewEyeTarget();
+                ufo.eyeUpdateTimer = 0;
+                ufo.eyeUpdateInterval = 0.1 + Math.random() * 1.0; 
+            }
+            
+            const eyeSpeed = 0.3; 
+            ['left', 'right'].forEach(name => {
+                const current = ufo.eyePupilPos[name];
+                const target = ufo.eyeTarget[name];
+                current.x += (target.x - current.x) * eyeSpeed;
+                current.y += (target.y - current.y) * eyeSpeed;
+            });
+
+            const newNoteIndex = Math.floor(map(ufo.x, 0, width, 0, currentScale.length - 1));
+            
+            if (newNoteIndex !== ufoNoteIndex && droneSynth) {
+                ufoNoteIndex = newNoteIndex;
+                const note = currentScale[Math.max(0, Math.min(currentScale.length - 1, ufoNoteIndex))];
+                const modulationIndex = map(ufo.y, 0, height, 8, 1.5);
+                
+                droneSynth.set({ modulationIndex: modulationIndex });
+                droneSynth.triggerAttackRelease(note, 6.0, Tone.now(), 0.5); 
+            }
+        }
+        
+        function drawTentacles(time) {
+            if (!showUFO) return;
+
+            ctx.globalCompositeOperation = 'lighter'; 
+            ctx.filter = 'blur(15px)'; 
+
+            const numTentacles = 12; 
+            const centerOffset = ufo.radius / 2; 
+
+            for (let i = 0; i < numTentacles; i++) {
+                const startX = ufo.x;
+                const startY = ufo.y + centerOffset;
+
+                const tentacleHue = (psychedelicHue + i * 30) % 360; 
+                ctx.strokeStyle = getRGBColor(tentacleHue, 1.0, MAX_RGB_INTENSITY + 70); 
+                
+                ctx.lineWidth = map(Math.sin(time * 10 + i * 0.5), -1, 1, 3, 8, true); 
+                ctx.lineCap = 'round';
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+
+                let currentX = startX;
+                let currentY = startY;
+
+                for (let j = 0; j < 8; j++) { 
+                    const length = 20 + Math.sin(time * 4 + i * 0.7 + j * 1.5) * 20; 
+                    const noise = simpleNoise(noiseOffset + i * 0.2 + j * 0.8) * 0.8;
+                    const angle = Math.PI / 2 + (i / numTentacles - 0.5) * Math.PI * 1.2 + noise * 0.8; 
+
+                    currentX += Math.cos(angle) * length;
+                    currentY += Math.sin(angle) * length;
+                    
+                    ctx.lineTo(currentX, currentY);
+                }
+                ctx.stroke();
+            }
+            ctx.filter = 'none';
+        }
+
+        function drawUFOAnomaly(time) {
+             if (!showUFO) return;
+
+            const pulseRadius = ufo.radius * 4 + Math.sin(time * 5) * ufo.radius * 2; 
+            const centerHue = (psychedelicHue + 180) % 360; 
+            
+            ctx.globalCompositeOperation = 'difference'; 
+            const diffColor = getRGBColor(centerHue, 1.0, 255); 
+            ctx.fillStyle = diffColor;
+            ctx.filter = `blur(30px)`;
+
+            ctx.beginPath();
+            ctx.arc(ufo.x + Math.sin(time*3)*10, ufo.y + Math.cos(time*4)*10, pulseRadius * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalCompositeOperation = 'xor'; 
+            const xorColor = getRGBColor((centerHue + 90) % 360, 0.9, 150); 
+            ctx.fillStyle = xorColor;
+            ctx.filter = `blur(10px)`; 
+            
+            ctx.beginPath();
+            ctx.arc(ufo.x - Math.cos(time*2)*5, ufo.y - Math.sin(time*5)*5, pulseRadius * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.filter = 'none';
+            ctx.globalCompositeOperation = 'source-over'; 
+        }
+
+        function drawAnomalyEyes() {
+            if (!showUFO) return;
+
+            ctx.globalCompositeOperation = 'lighter'; 
+            ctx.filter = 'none';
+            const eyeRadius = 4;
+            const eyeNames = ['left', 'right'];
+
+            eyeNames.forEach((name, index) => {
+                const side = index === 0 ? -1 : 1;
+                const eyeX = ufo.x + side * (ufo.eyeDistance + Math.sin(noiseOffset * 2 + index) * 2); 
+                const eyeY = ufo.y - (ufo.radius / 3) + Math.cos(noiseOffset * 3 + index) * 2;
+                const pupilOffset = ufo.eyePupilPos[name];
+
+                ctx.fillStyle = 'white';
+                ctx.shadowBlur = 5; 
+                ctx.shadowColor = 'white';
+
+                ctx.beginPath();
+                ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+
+                const pupilX = eyeX + pupilOffset.x;
+                const pupilY = eyeY + pupilOffset.y;
+
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(pupilX, pupilY, ufo.pupilSize, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawPermanentTrail(e) {
+            if (!isDrawing || typeof Tone === 'undefined') return;
+
+            const time = typeof Tone !== 'undefined' ? Tone.now() : Date.now() / 1000;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+            const distance = Math.sqrt(Math.pow(x - lastX, 2) + Math.pow(y - lastY, 2));
+            const velocity = Math.min(20, distance / (time - lastTime > 0.01 ? time - lastTime : 0.01)); 
+            
+            const { note, modulationIndex } = getNoteAndModulation(x, y);
+            const volumeVelocity = map(velocity, 0.1, 20, 0.1, 0.5, true); 
+            
+            if (drawSynth && time > lastNoteTime + noteMinInterval) {
+                drawSynth.set({ modulationIndex: modulationIndex });
+                drawSynth.triggerAttackRelease(note, '4n', time, volumeVelocity);
+                lastNoteTime = time;
+            }
+
+            const steps = Math.ceil(distance / 10) + 1; 
+            for (let i = 0; i < steps; i++) {
+                const ratio = i / steps;
+                const px = lastX + (x - lastX) * ratio;
+                const py = lastY + (y - lastY) * ratio;
+
+                trailParticles.push({
+                    x: px,
+                    y: py,
+                    baseRadius: 30 + Math.random() * 80, 
+                    hue: (psychedelicHue + (Math.random() * 60)) % 360,
+                    birthTime: time,
+                    life: 5.0, 
+                    pulseOffset: Math.random() * Math.PI * 2, 
+                });
+            }
+
+            lastX = x;
+            lastY = y;
+            lastTime = time;
+        }
+        
+        function animateCanvas(currentTime) {
+            if (isRunning) {
+                const time = typeof Tone !== 'undefined' ? Tone.now() : Date.now() / 1000;
+                const deltaTime = (currentTime - lastFrameTime) / 1000;
+                lastFrameTime = currentTime;
+                
+                const dynamicHue = (psychedelicHue * 0.5) % 360; 
+                canvasContainer.style.setProperty('--dynamic-hue', `${dynamicHue}deg`);
+                const shadowColor = getRGBColor(dynamicHue + 60, 0.6, 200); 
+                canvasContainer.style.setProperty('--dynamic-shadow-color', shadowColor);
+                const shadowColorAlt = getRGBColor(dynamicHue + 180, 0.7, 220); 
+                canvasContainer.style.setProperty('--dynamic-shadow-color-alt', shadowColorAlt);
+
+                ctx.globalCompositeOperation = 'source-over'; 
+                ctx.filter = 'blur(25px)'; 
+
+                const activeParticles = [];
+
+                trailParticles.forEach(p => {
+                    const elapsed = time - p.birthTime;
+                    const normalizedLife = elapsed / p.life;
+
+                    if (normalizedLife < 1) {
+                        const pulse = Math.sin(time * 10 + p.pulseOffset) * 0.2 + 0.8;
+                        const currentRadius = p.baseRadius * (1 - normalizedLife) * pulse; 
+
+                        const alpha = map(normalizedLife, 0, 1, 0.9, 0.0, true);
+                        
+                        ctx.fillStyle = getRGBColor(p.hue, alpha, MAX_RGB_INTENSITY); 
+
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, currentRadius * 0.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        activeParticles.push(p);
+                    }
+                });
+                
+                trailParticles = activeParticles;
+
+                ctx.filter = 'none'; 
+                
+                updateUFO(deltaTime); 
+                drawTentacles(time); 
+                drawUFOAnomaly(time); 
+                drawAnomalyEyes(); 
+
+                requestAnimationFrame(animateCanvas);
+            }
+        }
+
+        function loadToneJS() {
+            return new Promise((resolve, reject) => {
+                if (typeof Tone !== 'undefined') { return resolve(); }
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"; 
+                script.onload = () => { resolve(); };
+                script.onerror = () => { reject(new Error("Failed to load Tone.js")); };
+                document.head.appendChild(script);
+            });
+        }
+        
+        async function initializeAudio() {
+            if (isRunning) return; 
+
+            try {
+                await loadToneJS(); 
+                await Tone.start();
+
+                initializeScale(); 
+
+                limiter = new Tone.Limiter(-1).toDestination();
+                reverb = new Tone.Reverb({ decay: 30, preDelay: 0.1 }).connect(limiter); 
+                delay = new Tone.FeedbackDelay({ delayTime: '4n', feedback: 0.85 }).connect(reverb); 
+                reverb.wet.value = 0.6; 
+
+                const pluckFMParams = {
+                    harmonicity: 3.5, modulationIndex: 0.5, oscillator: { type: 'sine' },
+                    modulation: { type: 'triangle' }, modulationEnvelope: { attack: 0.01, decay: 0.1, sustain: 1.0, release: 0.5 }
+                };
+
+                const drawFMParams = { ...pluckFMParams }; 
+                drawFMParams.envelope = { attack: 0.005, decay: 0.5, sustain: 0.0, release: 1.5 }; 
+                drawSynth = new Tone.PolySynth(Tone.FMSynth, drawFMParams).connect(delay);
+                drawSynth.volume.value = -10; 
+
+                const droneFMParams = { ...pluckFMParams }; 
+                droneFMParams.envelope = { attack: 2.0, decay: 0.5, sustain: 0.5, release: 20.0 }; 
+                droneSynth = new Tone.PolySynth(Tone.FMSynth, droneFMParams).connect(delay);
+                droneSynth.volume.value = -10; 
+
+                Tone.Transport.start();
+
+                isRunning = true;
+                document.getElementById('startButton').remove();
+                
+                setNewEyeTarget(); 
+                droneSynth.triggerAttackRelease('G3', 100, Tone.now(), 0.5);
+
+                requestAnimationFrame(animateCanvas);
+
+            } catch (e) {
+                console.error("Error initializing Tone.js:", e);
+                const startButton = document.getElementById('startButton');
+                if (startButton) {
+                    startButton.textContent = 'AUDIO LOAD ERROR. RELOAD PAGE.';
+                    startButton.disabled = true;
+                    startButton.classList.add('bg-red-800', 'text-white');
+                }
+            }
+        }
+
+        function resetCanvas() {
+            trailParticles = []; 
+        }
+
+        document.getElementById('toggleUFOButton').addEventListener('click', () => {
+            showUFO = !showUFO;
+            const button = document.getElementById('toggleUFOButton');
+            if (showUFO) {
+                button.classList.add('active');
+                if (droneSynth && typeof Tone !== 'undefined') droneSynth.triggerAttackRelease('G3', 100, Tone.now(), 0.5);
+            } else {
+                button.classList.remove('active');
+                if (droneSynth) droneSynth.releaseAll();
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', resetCanvas);
+        
+        document.getElementById('scaleSelect').addEventListener('change', initializeScale);
+        document.getElementById('rootNoteSelect').addEventListener('change', initializeScale);
+
+
+        function startDrawing(e) {
+            if (!isRunning) return;
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX || e.touches[0].clientX) - rect.left;
+            lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+            lastTime = typeof Tone !== 'undefined' ? Tone.now() : Date.now() / 1000;
+            e.preventDefault(); 
+            drawPermanentTrail(e);
+        }
+
+        function moveDrawing(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+            drawPermanentTrail({ clientX: x + rect.left, clientY: y + rect.top });
+            e.preventDefault();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function setupControls() {
+            const noteSelect = document.getElementById('rootNoteSelect');
+            NOTES.forEach(note => {
+                const option = document.createElement('option');
+                option.value = note;
+                option.textContent = note;
+                noteSelect.appendChild(option);
+            });
+            noteSelect.value = 'G'; 
+        }
+
+
+        window.onload = function() {
+            setupControls();
+            resizeCanvas();
+            
+            const startButton = document.createElement('button');
+            startButton.id = 'startButton';
+            startButton.className = 'control-element fixed bottom-10 p-4 text-sm z-50';
+            startButton.textContent = 'TAP TO START PULSE';
+            startButton.addEventListener('click', initializeAudio);
+            document.body.appendChild(startButton);
+        }
+
+        function setupListeners() {
+            canvas.addEventListener('pointerdown', startDrawing);
+            canvas.addEventListener('pointerup', stopDrawing);
+            canvas.addEventListener('pointerleave', stopDrawing);
+            canvas.addEventListener('pointermove', moveDrawing);
+            
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        setupListeners();
+    </script>
+</body>
+</html>

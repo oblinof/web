@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAVECAT</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+            cursor: grab;
+        }
+        .frame {
+            background: #c0c0c0;
+            border: 4px outset #808080;
+            border-radius: 8px;
+            padding: 4px;
+            box-sizing: border-box;
+        }
+        #mainFrame {
+            position: absolute;
+            left: 0;
+            width: 66.66vw;
+            height: 100vh;
+        }
+        #sideFrame1, #sideFrame2 {
+            position: absolute;
+            right: 0;
+            width: 33.33vw;
+            height: 50vh;
+        }
+        #sideFrame1 { top: 0; }
+        #sideFrame2 { top: 50vh; }
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            image-rendering: pixelated;
+        }
+        .pixelated { image-rendering: pixelated; }
+    </style>
+</head>
+<body class="select-none">
+    <div id="overlay" class="absolute inset-0 bg-[#c0c0c0] bg-opacity-90 flex flex-col items-center justify-center text-[#000000] z-50 transition-opacity duration-500">
+        <h1 class="text-4xl font-bold mb-4 animate-pulse">RAVECAT</h1>
+        <p class="text-xl mb-6 text-[#404040]">Press any key (A–Z) to Glitch. Use the <b>Arrow Keys</b> to Move. <b>Spacebar</b> to Jump. <b>Click and drag</b> to Rotate. <b>Mouse wheel</b> to Zoom.</p>
+        <p class="text-sm font-mono text-[#808080] p-2 border border-[#808080] rounded">FXS.</p>
+    </div>
+    <div id="mainFrame" class="frame"><canvas id="mainCanvas" class="pixelated"></canvas></div>
+    <div id="sideFrame1" class="frame"><canvas id="sideCanvas1" class="pixelated"></canvas></div>
+    <div id="sideFrame2" class="frame"><canvas id="sideCanvas2" class="pixelated"></canvas></div>
+
+    <script>
+        const RENDER_WIDTH = 320;
+        const RENDER_HEIGHT = 240;
+        const KEY_EFFECTS = {};
+        const GBA_COLORS = [0x000000, 0x404040, 0x808080, 0xc0c0c0, 0xffffff];
+        const CIRCLE_RADIUS = 60;
+        const GROUND_Y = 0;
+        const CENTER = new THREE.Vector3(0, 0, 0);
+
+        let scene, camera, renderer, sideRenderer1, sideRenderer2;
+        let topCamera, sideCamera;
+        let finalScene, finalCamera, finalQuad;
+        let sideScene1, sideScene2, sideCamera1, sideCamera2;
+        let lowresTarget, sideTarget1, sideTarget2;
+        let isStarted = false;
+        let characters = [];
+        let player;
+        let raveLight1, raveLight2, floor, neonPlanes = [];
+        let particles = [];
+        let stairsSteps = [];
+        const keysPressed = {};
+        const BASE_GLITCH_VISUAL = 0;
+        let glitchIntensity = { visual: BASE_GLITCH_VISUAL, audio: 0 };
+        let activeEffectIndex = -1;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraDistance = 15;
+        let cameraAngleX = 0;
+        let cameraAngleY = 1.0;
+        let mainCamRotSpeed = 0.00005;
+        let sideCam1RotSpeed = 0.0005 + Math.random() * 0.0005;
+        let sideCam2RotSpeed = 0.0005 + Math.random() * 0.0005;
+        let floorRotSpeed = 0.0005;
+        let lastFrameTime = 0;
+        const FRAME_INTERVAL = 1000 / 60;
+        let lastEffectTime = 0;
+        const EFFECT_COOLDOWN = 100;
+        let floorTexture, floorTextureCanvas, floorCtx;
+        let sideCam1AngleOffset = Math.random() * Math.PI * 2;
+        let sideCam2AngleOffset = Math.random() * Math.PI * 2;
+
+        let masterFilter, bitCrusher, pingPongDelay, bassSynth, leadSynth, kick, highHat;
+        let bassSequence, leadSequence;
+        const CHORDS = [
+            ["F3", "A3", "C4"],
+            ["C3", "E3", "G3"],
+            ["G3", "B3", "D4"]
+        ];
+        let currentChordIndex = 0;
+
+        const GlitchShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uTime": { value: 0.0 },
+                "uIntensity": { value: 0.0 },
+                "uResolution": { value: new THREE.Vector2(RENDER_WIDTH, RENDER_HEIGHT) },
+                "uViewport": { value: new THREE.Vector2(window.innerWidth * 0.6666, window.innerHeight) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float uTime;
+                uniform float uIntensity;
+                uniform vec2 uResolution;
+                varying vec2 vUv;
+                float noise(vec2 p) {
+                    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+                }
+                void main() {
+                    vec2 uv = vUv;
+                    vec4 color = texture2D(tDiffuse, uv);
+                    if (uIntensity > 0.0) {
+                        float intense = uIntensity * 0.05;
+                        vec2 offsetR = vec2(sin(uTime * 10.0) * intense, cos(uTime * 8.0) * intense);
+                        vec2 offsetG = vec2(cos(uTime * 9.0) * intense * 0.8, sin(uTime * 7.0) * intense * 0.8);
+                        vec2 offsetB = vec2(-sin(uTime * 8.0) * intense * 0.6, -cos(uTime * 6.0) * intense * 0.6);
+                        vec4 r = texture2D(tDiffuse, uv + offsetR);
+                        vec4 g = texture2D(tDiffuse, uv + offsetG);
+                        vec4 b = texture2D(tDiffuse, uv + offsetB);
+                        color = vec4(r.r, g.g, b.b, 1.0);
+                        float scanline = sin(gl_FragCoord.y * 3.14159 / uResolution.y * 20.0) * 0.2 + 0.8;
+                        color.rgb *= scanline;
+                        float vignette = smoothstep(1.0, 0.0, length(uv - 0.5));
+                        color.rgb *= vignette * 0.9;
+                        float n = noise(uv * uTime * 0.01) * uIntensity * 0.3;
+                        color.rgb += vec3(n);
+                    }
+                    float c = 16.0;
+                    color.rgb = floor(color.rgb * c) / c;
+                    gl_FragColor = color;
+                }
+            `
+        };
+
+        const FisheyeShader = {
+            uniforms: {
+                "tDiffuse": { value: null },
+                "uTime": { value: 0.0 },
+                "uResolution": { value: new THREE.Vector2(RENDER_WIDTH, RENDER_HEIGHT) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float uTime;
+                uniform vec2 uResolution;
+                varying vec2 vUv;
+                void main() {
+                    vec2 uv = vUv - 0.5;
+                    float dist = length(uv);
+                    float factor = 1.0 + dist * dist * 0.3; // Reduced distortion factor
+                    vec2 distortedUv = uv * factor + 0.5;
+                    if (distortedUv.x < 0.0 || distortedUv.x > 1.0 || distortedUv.y < 0.0 || distortedUv.y > 1.0) {
+                        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                    } else {
+                        gl_FragColor = texture2D(tDiffuse, distortedUv);
+                    }
+                }
+            `
+        };
+
+        function setupAudio() {
+            try {
+                Tone.Transport.bpm.value = 180;
+                Tone.Context.lookAhead = 0.05;
+                masterFilter = new Tone.Filter(20000, "lowpass").toDestination();
+                masterFilter.frequency.value = 10000;
+                bitCrusher = new Tone.BitCrusher(16).connect(masterFilter);
+                bitCrusher.wet.value = 0;
+                pingPongDelay = new Tone.PingPongDelay("8n", 0.2).connect(bitCrusher);
+                bassSynth = new Tone.MonoSynth({
+                    oscillator: { type: "square" },
+                    filter: { Q: 4 },
+                    envelope: { attack: 0.01, decay: 0.15, sustain: 0.3, release: 0.5 },
+                    filterEnvelope: { attack: 0.01, decay: 0.15, sustain: 0.5, release: 0.5, baseFrequency: 200, octaves: 3 }
+                }).connect(pingPongDelay);
+                leadSynth = new Tone.AMSynth({
+                    harmonicity: 2,
+                    oscillator: { type: "sawtooth" },
+                    envelope: { attack: 0.02, decay: 0.25, sustain: 0.1, release: 0.5 }
+                }).connect(pingPongDelay);
+                kick = new Tone.MembraneSynth({
+                    envelope: { attack: 0.002, decay: 0.3, sustain: 0.01, release: 0.5 },
+                    octaves: 8
+                }).toDestination();
+                highHat = new Tone.NoiseSynth({
+                    noise: { type: "white" },
+                    envelope: { attack: 0.002, decay: 0.05, sustain: 0.0, release: 0.05 }
+                }).connect(bitCrusher);
+                bassSequence = new Tone.Loop(time => {
+                    const chord = CHORDS[currentChordIndex];
+                    const note = chord[Math.floor(Math.random() * chord.length)];
+                    bassSynth.triggerAttackRelease(note, "16n", time);
+                    currentChordIndex = (currentChordIndex + 1) % CHORDS.length;
+                    const distortionAmount = 0.1 + glitchIntensity.audio * 0.3;
+                    bassSynth.distortion = distortionAmount;
+                }, "4n").start(0);
+                leadSequence = new Tone.Sequence((time, note) => {
+                    leadSynth.triggerAttackRelease(note + "5", "32n", time);
+                }, ["F", ["A", null, "C"], null, "G", ["B", null, "D"], null, "C", ["E", null, "G"], null, null], "8n").start("4n");
+                new Tone.Sequence((time, step) => {
+                    if (step === 0 || step === 2) kick.triggerAttackRelease("C1", "16n", time);
+                    if (step === 1 || step === 3) highHat.triggerAttackRelease(0.005, time);
+                }, [0, 1, 2, 3], "4n").start(0);
+            } catch (e) {
+                console.error("Audio setup failed:", e.message);
+            }
+        }
+
+        class CatPlayer {
+            constructor() {
+                this.group = new THREE.Group();
+                this.group.position.set(0, GROUND_Y, 0);
+                this.velocity = new THREE.Vector3();
+                this.moveSpeed = 0.3;
+                this.jumpVelocity = 0;
+                this.gravity = -0.1;
+                this.canJump = true;
+                this.time = 0;
+                this.targetRotationY = Math.PI / 2;
+                this.boundingRadius = 0.75;
+                this.stepHeight = 0.6;
+                this.createCatMesh();
+            }
+            createCatMesh() {
+                const material = new THREE.MeshLambertMaterial({ color: GBA_COLORS[3], specular: GBA_COLORS[4], shininess: 30 });
+                this.body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 3), material);
+                this.body.position.y = 0.5;
+                this.head = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 6), material);
+                this.head.position.set(0, 1.5, 1.5);
+                const earMaterial = new THREE.MeshLambertMaterial({ color: GBA_COLORS[4], specular: GBA_COLORS[4], shininess: 30 });
+                this.leftEar = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 4), earMaterial);
+                this.leftEar.position.set(-0.5, 2.2, 1.5);
+                this.rightEar = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.8, 4), earMaterial);
+                this.rightEar.position.set(0.5, 2.2, 1.5);
+                const eyeMaterial = new THREE.MeshBasicMaterial({ color: GBA_COLORS[0] });
+                this.leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), eyeMaterial);
+                this.leftEye.position.set(-0.3, 1.5, 2.0);
+                this.rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), eyeMaterial);
+                this.rightEye.position.set(0.3, 1.5, 2.0);
+                this.tail = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.5, 6), material);
+                this.tail.position.set(0, 0.5, -1.5);
+                this.tail.rotation.x = Math.PI / 4;
+                const shadow = new THREE.Mesh(
+                    new THREE.CircleGeometry(1.2, 6),
+                    new THREE.MeshBasicMaterial({ color: GBA_COLORS[0], transparent: true, opacity: 0.6 })
+                );
+                shadow.rotation.x = -Math.PI / 2;
+                this.legs = [];
+                const legMaterial = new THREE.MeshLambertMaterial({ color: GBA_COLORS[2] });
+                const legGeometry = new THREE.BoxGeometry(0.3, 1.5, 0.3);
+                const positions = [[0.6, 0.75, 1], [-0.6, 0.75, 1], [0.6, 0.75, -1], [-0.6, 0.75, -1]];
+                positions.forEach(pos => {
+                    const pivot = new THREE.Group();
+                    pivot.position.set(pos[0], 0, pos[2]);
+                    const leg = new THREE.Mesh(legGeometry, legMaterial);
+                    leg.position.y = -0.75;
+                    pivot.add(leg);
+                    this.body.add(pivot);
+                    this.legs.push(pivot);
+                });
+                this.group.add(this.body, this.head, this.leftEar, this.rightEar, this.leftEye, this.rightEye, this.tail, shadow);
+            }
+            jump() {
+                if (this.canJump) {
+                    this.jumpVelocity = 1.5;
+                    this.canJump = false;
+                }
+            }
+            update(time) {
+                this.time = time;
+                const rayDownOrigin = this.group.position.clone().add(new THREE.Vector3(0, 1, 0));
+                const rayDownDir = new THREE.Vector3(0, -1, 0);
+                const raycasterDown = new THREE.Raycaster(rayDownOrigin, rayDownDir);
+                const collidables = [floor, ...stairsSteps];
+                const intersectsDown = raycasterDown.intersectObjects(collidables);
+                let groundY = GROUND_Y;
+                if (intersectsDown.length > 0) {
+                    groundY = intersectsDown[0].point.y;
+                }
+                const isOnGround = this.group.position.y <= groundY + 0.01;
+                if (!isOnGround || this.jumpVelocity > 0) {
+                    this.jumpVelocity += this.gravity;
+                    this.group.position.y += this.jumpVelocity;
+                    if (this.group.position.y < groundY) {
+                        this.group.position.y = groundY;
+                        this.jumpVelocity = 0;
+                        this.canJump = true;
+                    }
+                } else {
+                    this.group.position.y = groundY;
+                    this.jumpVelocity = 0;
+                    this.canJump = true;
+                }
+                const isMoving = keysPressed['ARROWUP'] || keysPressed['ARROWDOWN'] || keysPressed['ARROWLEFT'] || keysPressed['ARROWRIGHT'];
+                if (isMoving && this.canJump) {
+                    const step = Math.sin(time * 0.015 * this.moveSpeed * 2) * 0.8;
+                    this.legs[0].rotation.x = step;
+                    this.legs[3].rotation.x = step;
+                    this.legs[1].rotation.x = -step;
+                    this.legs[2].rotation.x = -step;
+                    this.body.position.y = 0.5 + Math.abs(Math.sin(time * 0.015 * this.moveSpeed * 2)) * 0.1;
+                    this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, this.targetRotationY, 0.1);
+                } else if (!this.canJump) {
+                    this.legs.forEach(leg => leg.rotation.x = 0);
+                    this.body.position.y = 0.5;
+                    this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, this.targetRotationY, 0.1);
+                } else {
+                    this.legs.forEach(leg => leg.rotation.x = 0);
+                    this.body.position.y = 0.5 + Math.sin(time * 0.005) * 0.05;
+                }
+                const eyeWiggleX = Math.sin(time * 0.005) * 0.1;
+                const eyeWiggleY = Math.cos(time * 0.007) * 0.05;
+                this.leftEye.position.set(-0.3 + eyeWiggleX, 1.5 + eyeWiggleY, 2.0);
+                this.rightEye.position.set(0.3 + eyeWiggleX, 1.5 + eyeWiggleY, 2.0);
+                this.tail.rotation.z = Math.sin(time * 0.005) * 0.3;
+            }
+            move(deltaTime) {
+                const moveSpeed = this.moveSpeed * deltaTime * 60;
+                const direction = new THREE.Vector3();
+                if (keysPressed['ARROWUP']) direction.z -= 1;
+                if (keysPressed['ARROWDOWN']) direction.z += 1;
+                if (keysPressed['ARROWLEFT']) direction.x -= 1;
+                if (keysPressed['ARROWRIGHT']) direction.x += 1;
+                if (direction.length() > 0) {
+                    direction.normalize();
+                    const moveDist = moveSpeed;
+                    const moveDir = direction.clone().multiplyScalar(moveDist);
+                    const rayOrigin = this.group.position.clone().add(new THREE.Vector3(0, 0.1, 0));
+                    const rayDir = direction.clone().normalize();
+                    const raycaster = new THREE.Raycaster(rayOrigin, rayDir, 0, moveDist + this.boundingRadius);
+                    const intersects = raycaster.intersectObjects(stairsSteps);
+                    if (intersects.length > 0) {
+                        const hit = intersects[0];
+                        const stepUp = hit.point.y - this.group.position.y;
+                        if (stepUp > 0 && stepUp <= this.stepHeight) {
+                            this.group.position.y += stepUp;
+                        } else {
+                            const distToHit = hit.distance - this.boundingRadius;
+                            if (distToHit > 0) {
+                                this.group.position.add(direction.clone().multiplyScalar(distToHit));
+                            } else {
+                                return;
+                            }
+                        }
+                    }
+                    const newPos = this.group.position.clone().add(moveDir);
+                    if (newPos.distanceTo(CENTER) <= CIRCLE_RADIUS) {
+                        this.group.position.copy(newPos);
+                        this.targetRotationY = Math.atan2(direction.x, direction.z);
+                    }
+                }
+            }
+        }
+
+        class RavePunk {
+            constructor() {
+                this.group = new THREE.Group();
+                this.createMesh();
+                this.target = new THREE.Vector3(0, 0, 0);
+                this.speed = 0.01 + Math.random() * 0.02;
+                this.asciiText = this.createAsciiText();
+                this.group.add(this.asciiText.mesh);
+                this.updateTarget();
+                this.lastAsciiUpdate = 0;
+            }
+            createMesh() {
+                const textureCanvas = document.createElement('canvas');
+                textureCanvas.width = 32;
+                textureCanvas.height = 32;
+                const ctx = textureCanvas.getContext('2d');
+                ctx.fillStyle = `#${GBA_COLORS[Math.floor(Math.random() * 4) + 1].toString(16).padStart(6, '0')}`;
+                ctx.fillRect(0, 0, 32, 32);
+                ctx.fillStyle = Math.random() > 0.5 ? `#${GBA_COLORS[0].toString(16).padStart(6, '0')}` : `#${GBA_COLORS[4].toString(16).padStart(6, '0')}`;
+                ctx.fillRect(0, 0, 16, 16);
+                ctx.fillRect(16, 16, 16, 16);
+                const texture = new THREE.CanvasTexture(textureCanvas);
+                texture.minFilter = THREE.NearestFilter;
+                texture.magFilter = THREE.NearestFilter;
+                texture.generateMipmaps = false;
+                const material = new THREE.MeshLambertMaterial({
+                    map: texture,
+                    specular: GBA_COLORS[4],
+                    shininess: 30
+                });
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 6), material);
+                head.position.y = 1.5;
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.5), material);
+                body.position.y = 0.5;
+                const leftArm = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1, 6), material);
+                leftArm.position.set(-0.7, 0.5, 0);
+                leftArm.rotation.z = Math.PI / 4;
+                const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1, 6), material);
+                rightArm.position.set(0.7, 0.5, 0);
+                rightArm.rotation.z = -Math.PI / 4;
+                this.group.add(head, body, leftArm, rightArm);
+                const shadow = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.8, 6),
+                    new THREE.MeshBasicMaterial({ color: GBA_COLORS[0], transparent: true, opacity: 0.5 })
+                );
+                shadow.rotation.x = -Math.PI / 2;
+                this.group.add(shadow);
+                this.group.rotation.y = Math.random() * Math.PI * 2;
+            }
+            createAsciiText() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 16;
+                const ctx = canvas.getContext('2d');
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.minFilter = THREE.NearestFilter;
+                texture.magFilter = THREE.NearestFilter;
+                texture.generateMipmaps = false;
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    transparent: true,
+                    side: THREE.DoubleSide,
+                    opacity: 1
+                });
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 0.8), material);
+                mesh.position.y = 2.5;
+                return { mesh, ctx, texture };
+            }
+            updateAscii(time) {
+                if (time - this.lastAsciiUpdate < 500) return;
+                this.lastAsciiUpdate = time;
+                try {
+                    const asciiSet = '01#$@%&^*()_-+=[]{};:<>?/~`|\\';
+                    let text = '';
+                    for (let i = 0; i < 8; i++) {
+                        text += asciiSet[Math.floor(Math.random() * asciiSet.length)];
+                    }
+                    this.asciiText.ctx.clearRect(0, 0, 64, 16);
+                    this.asciiText.ctx.fillStyle = `#${GBA_COLORS[4].toString(16).padStart(6, '0')}`;
+                    this.asciiText.ctx.font = 'bold 12px monospace';
+                    this.asciiText.ctx.textBaseline = 'top';
+                    this.asciiText.ctx.fillText(text, 5, 5);
+                    this.asciiText.texture.needsUpdate = true;
+                    this.asciiText.mesh.visible = Math.random() > 0.2;
+                } catch (e) {
+                    console.error("ASCII update error:", e);
+                }
+            }
+            updateTarget() {
+                const theta = Math.random() * Math.PI * 2;
+                const r = Math.sqrt(Math.random()) * CIRCLE_RADIUS;
+                this.target.set(r * Math.cos(theta), 0, r * Math.sin(theta));
+            }
+            update(time) {
+                this.group.position.lerp(this.target, 0.005);
+                if (this.group.position.distanceTo(this.target) < 5) {
+                    this.updateTarget();
+                }
+                this.group.rotation.y += Math.sin(time * 0.0005) * 0.01;
+                if (Math.random() < 0.05) {
+                    this.updateAscii(time);
+                }
+            }
+        }
+
+        function createParticleBurst() {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const colors = [];
+            for (let i = 0; i < 30; i++) {
+                vertices.push(
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+                const hue = Math.random();
+                const color = new THREE.Color().setHSL(hue, 1.0, 0.5);
+                colors.push(color.r, color.g, color.b);
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            const material = new THREE.PointsMaterial({
+                size: 0.3,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            const particleSystem = new THREE.Points(geometry, material);
+            particleSystem.position.set(0, 5, 0);
+            scene.add(particleSystem);
+            particles.push({ system: particleSystem, lifetime: 800 });
+        }
+
+        function updateFloorTexture(time, effectIndex) {
+            floorCtx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            floorCtx.fillRect(0, 0, 32, 32);
+            if (effectIndex === 1 || effectIndex === 10 || effectIndex === -1) {
+                floorCtx.fillStyle = `hsl(${(time * 0.1) % 360}, 80%, 50%)`;
+                floorCtx.fillRect(0, 0, 16, 16);
+                floorCtx.fillRect(16, 16, 16, 16);
+            } else if (effectIndex === 6) {
+                for (let i = 0; i < 4; i++) {
+                    floorCtx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                    floorCtx.fillRect(Math.random() * 32, Math.random() * 32, 8, 8);
+                }
+            } else if (effectIndex === 20) {
+                floorCtx.fillStyle = `hsl(${Math.random() * 360}, 50%, 30%)`;
+                floorCtx.fillRect(0, 0, 32, 32);
+                for (let i = 0; i < 8; i++) {
+                    floorCtx.fillStyle = `hsl(${Math.random() * 360}, 70%, 40%)`;
+                    floorCtx.fillRect(Math.random() * 32, Math.random() * 32, 4, 4);
+                }
+            }
+            floorTexture.needsUpdate = true;
+        }
+
+        function createStairs() {
+            const stairMaterial = new THREE.MeshLambertMaterial({ color: GBA_COLORS[3] });
+            const numChains = 5; // Number of interconnected stair chains
+            for (let chain = 0; chain < numChains; chain++) {
+                let currentX = 0;
+                let currentY = GROUND_Y;
+                let currentZ = 0;
+                let currentDirection = Math.random() * Math.PI * 2;
+                const numSegments = Math.floor(Math.random() * 4) + 3; // 3 to 6 segments per chain
+                for (let seg = 0; seg < numSegments; seg++) {
+                    const steps = Math.floor(Math.random() * 11) + 10; // 10 to 20 steps per segment
+                    const stairGroup = new THREE.Group();
+                    const stepWidth = 2;
+                    const stepHeight = 0.5;
+                    const stepDepth = 1;
+                    for (let i = 0; i < steps; i++) {
+                        const step = new THREE.Mesh(
+                            new THREE.BoxGeometry(stepWidth, stepHeight, stepDepth),
+                            stairMaterial
+                        );
+                        step.position.set(currentX + i * stepDepth * Math.cos(currentDirection), currentY + i * stepHeight, currentZ + i * stepDepth * Math.sin(currentDirection));
+                        stairGroup.add(step);
+                        stairsSteps.push(step);
+                    }
+                    scene.add(stairGroup);
+                    // Update for next segment
+                    currentX += steps * stepDepth * Math.cos(currentDirection);
+                    currentZ += steps * stepDepth * Math.sin(currentDirection);
+                    currentY += steps * stepHeight;
+                    // Change direction for interconnection
+                    currentDirection += (Math.random() - 0.5) * Math.PI; // Random turn
+                }
+            }
+        }
+
+        function createColoredPlane() {
+            const neonColors = [0xff00ff, 0x00ffff, 0xffff00, 0x00ff00, 0xff0000];
+            for (let i = 0; i < 10; i++) {
+                const neonTextureCanvas = document.createElement('canvas');
+                neonTextureCanvas.width = 32;
+                neonTextureCanvas.height = 32;
+                const nCtx = neonTextureCanvas.getContext('2d');
+                nCtx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                nCtx.fillRect(0, 0, 32, 32);
+                nCtx.fillStyle = `hsl(${Math.random() * 360}, 80%, 50%)`;
+                nCtx.fillRect(0, 0, 16, 16);
+                nCtx.fillRect(16, 16, 16, 16);
+                const neonTexture = new THREE.CanvasTexture(neonTextureCanvas);
+                neonTexture.wrapS = THREE.RepeatWrapping;
+                neonTexture.wrapT = THREE.RepeatWrapping;
+                neonTexture.repeat.set(4, 4);
+                neonTexture.minFilter = THREE.NearestFilter;
+                neonTexture.magFilter = THREE.NearestFilter;
+                neonTexture.generateMipmaps = false;
+                const neonMaterial = new THREE.MeshLambertMaterial({
+                    map: neonTexture,
+                    color: neonColors[i % neonColors.length],
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.7,
+                    blending: THREE.AdditiveBlending
+                });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), neonMaterial);
+                const theta = Math.random() * Math.PI * 2;
+                const r = Math.random() * CIRCLE_RADIUS * 0.8;
+                plane.position.set(r * Math.cos(theta), Math.random() * 20 + 5, r * Math.sin(theta));
+                plane.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+                scene.add(plane);
+                neonPlanes.push({ mesh: plane, texture: neonTexture, ctx: nCtx, lastUpdate: 0 });
+            }
+        }
+
+        function init() {
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (!gl) {
+                    console.error("WebGL is not supported by your browser.");
+                    alert("WebGL is not supported. Please use a modern browser with WebGL enabled.");
+                    return;
+                }
+
+                renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('mainCanvas'), antialias: false });
+                renderer.setSize(window.innerWidth * 0.6666 - 16, window.innerHeight - 16);
+                renderer.setPixelRatio(1);
+                renderer.autoClear = false;
+                sideRenderer1 = new THREE.WebGLRenderer({ canvas: document.getElementById('sideCanvas1'), antialias: false });
+                sideRenderer1.setSize(window.innerWidth * 0.3333 - 16, window.innerHeight * 0.5 - 16);
+                sideRenderer1.setPixelRatio(1);
+                sideRenderer1.autoClear = false;
+                sideRenderer2 = new THREE.WebGLRenderer({ canvas: document.getElementById('sideCanvas2'), antialias: false });
+                sideRenderer2.setSize(window.innerWidth * 0.3333 - 16, window.innerHeight * 0.5 - 16);
+                sideRenderer2.setPixelRatio(1);
+                sideRenderer2.autoClear = false;
+
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(GBA_COLORS[0]);
+                scene.fog = new THREE.Fog(GBA_COLORS[0], 5, 100); // Increased fog far
+
+                const aspect = RENDER_WIDTH / RENDER_HEIGHT;
+                camera = new THREE.PerspectiveCamera(80, aspect, 0.1, 100);
+                camera.position.set(0, 10, 15);
+                topCamera = new THREE.PerspectiveCamera(80, aspect, 0.1, 200); // Increased far clip
+                topCamera.position.set(0, 20, 0);
+                topCamera.lookAt(0, 0, 0);
+                sideCamera = new THREE.PerspectiveCamera(80, aspect, 0.1, 200);
+                sideCamera.position.set(0, 10, 0);
+                sideCamera.lookAt(0, 0, 0);
+
+                lowresTarget = new THREE.WebGLRenderTarget(RENDER_WIDTH, RENDER_HEIGHT, {
+                    minFilter: THREE.NearestFilter,
+                    magFilter: THREE.NearestFilter,
+                    format: THREE.RGBAFormat,
+                    type: THREE.UnsignedByteType,
+                    generateMipmaps: false
+                });
+                sideTarget1 = new THREE.WebGLRenderTarget(RENDER_WIDTH, RENDER_HEIGHT, {
+                    minFilter: THREE.NearestFilter,
+                    magFilter: THREE.NearestFilter,
+                    format: THREE.RGBAFormat,
+                    type: THREE.UnsignedByteType,
+                    generateMipmaps: false
+                });
+                sideTarget2 = new THREE.WebGLRenderTarget(RENDER_WIDTH, RENDER_HEIGHT, {
+                    minFilter: THREE.NearestFilter,
+                    magFilter: THREE.NearestFilter,
+                    format: THREE.RGBAFormat,
+                    type: THREE.UnsignedByteType,
+                    generateMipmaps: false
+                });
+
+                finalScene = new THREE.Scene();
+                finalCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+                const finalMaterial = new THREE.ShaderMaterial({
+                    uniforms: GlitchShader.uniforms,
+                    vertexShader: GlitchShader.vertexShader,
+                    fragmentShader: GlitchShader.fragmentShader
+                });
+                finalMaterial.uniforms.tDiffuse.value = lowresTarget.texture;
+                finalQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), finalMaterial);
+                finalScene.add(finalQuad);
+
+                sideScene1 = new THREE.Scene();
+                const sideMaterial1 = new THREE.MeshBasicMaterial({ map: sideTarget1.texture });
+                const sideQuad1 = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sideMaterial1);
+                sideScene1.add(sideQuad1);
+
+                sideScene2 = new THREE.Scene();
+                const sideMaterial2 = new THREE.ShaderMaterial({
+                    uniforms: FisheyeShader.uniforms,
+                    vertexShader: FisheyeShader.vertexShader,
+                    fragmentShader: FisheyeShader.fragmentShader
+                });
+                sideMaterial2.uniforms.tDiffuse.value = sideTarget2.texture;
+                const sideQuad2 = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), sideMaterial2);
+                sideScene2.add(sideQuad2);
+
+                scene.add(new THREE.AmbientLight(GBA_COLORS[2], 1.2));
+                raveLight1 = new THREE.PointLight(GBA_COLORS[4], 10, 25);
+                raveLight1.position.set(15, 10, 0);
+                scene.add(raveLight1);
+                raveLight2 = new THREE.PointLight(GBA_COLORS[3], 10, 25);
+                raveLight2.position.set(-15, 10, 0);
+                scene.add(raveLight2);
+
+                floorTextureCanvas = document.createElement('canvas');
+                floorTextureCanvas.width = 32;
+                floorTextureCanvas.height = 32;
+                floorCtx = floorTextureCanvas.getContext('2d');
+                floorCtx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                floorCtx.fillRect(0, 0, 32, 32);
+                floorCtx.fillStyle = `hsl(${Math.random() * 360}, 80%, 50%)`;
+                floorCtx.fillRect(0, 0, 16, 16);
+                floorCtx.fillRect(16, 16, 16, 16);
+                floorTexture = new THREE.CanvasTexture(floorTextureCanvas);
+                floorTexture.wrapS = THREE.RepeatWrapping;
+                floorTexture.wrapT = THREE.RepeatWrapping;
+                floorTexture.repeat.set(8, 8);
+                floorTexture.minFilter = THREE.NearestFilter;
+                floorTexture.magFilter = THREE.NearestFilter;
+                floorTexture.generateMipmaps = false;
+                const floorMaterial = new THREE.MeshLambertMaterial({
+                    map: floorTexture,
+                    color: 0xffffff
+                });
+                floor = new THREE.Mesh(new THREE.CircleGeometry(CIRCLE_RADIUS, 32), floorMaterial);
+                floor.rotation.x = -Math.PI / 2;
+                scene.add(floor);
+
+                const raveMaterial = new THREE.MeshLambertMaterial({ color: GBA_COLORS[4] });
+                for (let i = 0; i < 3; i++) {
+                    const speaker = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 2), raveMaterial);
+                    const theta = Math.random() * Math.PI * 2;
+                    const r = Math.random() * CIRCLE_RADIUS * 0.8;
+                    speaker.position.set(r * Math.cos(theta), 1.5, r * Math.sin(theta));
+                    scene.add(speaker);
+                }
+                for (let i = 0; i < 1; i++) {
+                    const discoBall = new THREE.Mesh(new THREE.SphereGeometry(1, 6, 6), raveMaterial);
+                    const theta = Math.random() * Math.PI * 2;
+                    const r = Math.random() * CIRCLE_RADIUS * 0.5;
+                    discoBall.position.set(r * Math.cos(theta), 5 + Math.random() * 5, r * Math.sin(theta));
+                    scene.add(discoBall);
+                }
+                for (let i = 0; i < 2; i++) {
+                    const lightPole = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 6, 6), raveMaterial);
+                    const theta = i * Math.PI / 2;
+                    const r = CIRCLE_RADIUS * 0.9;
+                    lightPole.position.set(r * Math.cos(theta), 3, r * Math.sin(theta));
+                    scene.add(lightPole);
+                }
+
+                createStairs();
+                createColoredPlane();
+
+                player = new CatPlayer();
+                scene.add(player.group);
+                for (let i = 0; i < 3; i++) {
+                    const punk = new RavePunk();
+                    punk.updateTarget();
+                    characters.push(punk);
+                    scene.add(punk.group);
+                }
+
+                setupKeyEffects();
+                document.addEventListener('keydown', onKeyDown);
+                document.addEventListener('keyup', onKeyUp);
+                document.addEventListener('mousedown', onMouseDown);
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+                document.addEventListener('wheel', onMouseWheel);
+                document.getElementById('overlay').addEventListener('click', () => {
+                    if (!isStarted) startRave();
+                });
+                window.addEventListener('resize', onWindowResize);
+                onWindowResize();
+            } catch (e) {
+                console.error("Initialization failed:", e.message);
+                alert("Failed to initialize the application. Check the console for details.");
+            }
+        }
+
+        function setupKeyEffects() {
+            const effectNames = [
+                "Strobe", "Color Swap", "Camera Shake", "BitCrush", "High Filter", "Deep Bass", "Chaos Spin",
+                "Fractal Zoom", "Ascii Rain", "Crazy Delay", "Color Cycle", "Pulse Light", "Audio Shake", "Slow Zoom",
+                "Phase Invert", "Max Distortion", "Brief Silence", "Chaos Bass", "Random Color", "Zoom Out", "Dense Fog",
+                "Ghost Move", "Speed Glitch", "Particle Burst"
+            ];
+            const startCharCode = 'A'.charCodeAt(0);
+            for (let i = 0; i < 24; i++) {
+                KEY_EFFECTS[String.fromCharCode(startCharCode + i)] = {
+                    name: effectNames[i] || "Effect " + i,
+                    index: i
+                };
+            }
+        }
+
+        function onKeyDown(event) {
+            try {
+                if (!isStarted) startRave();
+                const key = event.key.toUpperCase();
+                keysPressed[key] = true;
+                if (event.code === 'Space') {
+                    player.jump();
+                }
+                if (KEY_EFFECTS[key] && !['ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT', 'SPACE'].includes(key)) {
+                    const currentTime = performance.now();
+                    if (currentTime - lastEffectTime > EFFECT_COOLDOWN) {
+                        triggerGlitch(KEY_EFFECTS[key].index);
+                        lastEffectTime = currentTime;
+                    }
+                }
+            } catch (e) {
+                console.error("Keydown event error:", e);
+            }
+        }
+
+        function onKeyUp(event) {
+            try {
+                const key = event.key.toUpperCase();
+                keysPressed[key] = false;
+            } catch (e) {
+                console.error("Keyup event error:", e);
+            }
+        }
+
+        function onMouseDown(e) {
+            try {
+                if (e.target.tagName.toLowerCase() !== 'canvas' || !isStarted) return;
+                isDragging = true;
+                document.body.style.cursor = 'grabbing';
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            } catch (e) {
+                console.error("Mousedown event error:", e);
+            }
+        }
+
+        function onMouseMove(e) {
+            try {
+                if (!isDragging) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                cameraAngleX -= deltaX * 0.005;
+                cameraAngleY += deltaY * 0.005;
+                cameraAngleY = Math.max(0.1, Math.min(Math.PI - 0.1, cameraAngleY));
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            } catch (e) {
+                console.error("Mousemove event error:", e);
+            }
+        }
+
+        function onMouseUp() {
+            try {
+                isDragging = false;
+                document.body.style.cursor = 'grab';
+            } catch (e) {
+                console.error("Mouseup event error:", e);
+            }
+        }
+
+        function onMouseWheel(e) {
+            try {
+                if (!isStarted) return;
+                const zoomSpeed = 0.5;
+                cameraDistance += e.deltaY * zoomSpeed * 0.01;
+                cameraDistance = Math.max(5, Math.min(50, cameraDistance));
+                camera.updateProjectionMatrix();
+            } catch (e) {
+                console.error("Mouse wheel event error:", e);
+            }
+        }
+
+        function triggerGlitch(effectIndex) {
+            try {
+                if (activeEffectIndex !== effectIndex) {
+                    glitchIntensity.visual = 2.0;
+                    glitchIntensity.audio = 1.0;
+                    activeEffectIndex = effectIndex;
+                    camera.fov = 80;
+                    camera.updateProjectionMatrix();
+                    floorRotSpeed = 0.0005;
+                    scene.fog.near = 5;
+                    scene.fog.far = 100;
+                    bassSynth.distortion = 0.1;
+                    leadSynth.envelope.attack = 0.02;
+                    masterFilter.frequency.value = 10000;
+                    pingPongDelay.feedback.value = 0.2;
+                    pingPongDelay.delayTime.value = "8n";
+                    bitCrusher.wet.value = 0;
+                    bassSynth.oscillator.type = "square";
+                    particles.forEach(p => scene.remove(p.system));
+                    particles = [];
+                }
+                updateFloorTexture(performance.now(), effectIndex);
+                raveLight1.intensity = 30 + Math.random() * 30;
+                raveLight2.intensity = 30 + Math.random() * 30;
+                raveLight1.color.setHSL(Math.random(), 1.0, 0.8);
+                raveLight2.color.setHSL(Math.random(), 1.0, 0.8);
+                scene.fog.color.setHSL(Math.random(), 0.7, 0.6);
+
+                switch (effectIndex) {
+                    case 0: // Strobe
+                        raveLight1.intensity = 100;
+                        setTimeout(() => raveLight1.intensity = 10, 50);
+                        setTimeout(() => raveLight1.intensity = 100, 100);
+                        setTimeout(() => raveLight1.intensity = 10, 150);
+                        break;
+                    case 1: // Color Swap
+                        scene.background.setHSL(Math.random(), 1.0, 0.5);
+                        break;
+                    case 2: // Camera Shake
+                        camera.position.x += Math.random() * 5 - 2.5;
+                        camera.position.z += Math.random() * 5 - 2.5;
+                        break;
+                    case 3: // BitCrush
+                        bitCrusher.bits = Math.floor(Math.random() * 4) + 4;
+                        bitCrusher.wet.value = 0.8;
+                        break;
+                    case 4: // High Filter
+                        masterFilter.frequency.value = 100;
+                        break;
+                    case 5: // Deep Bass
+                        bassSynth.filterEnvelope.baseFrequency = 50;
+                        break;
+                    case 6: // Chaos Spin
+                        floorRotSpeed = 0.01;
+                        break;
+                    case 7: // Fractal Zoom
+                        cameraDistance = 8;
+                        camera.updateProjectionMatrix();
+                        break;
+                    case 8: // Ascii Rain
+                        characters.forEach(punk => punk.updateAscii(performance.now()));
+                        break;
+                    case 9: // Crazy Delay
+                        pingPongDelay.delayTime.value = "4n";
+                        pingPongDelay.feedback.value = 0.8;
+                        break;
+                    case 10: // Color Cycle
+                        scene.fog.color.setHSL(Math.random(), 1.0, 0.7);
+                        break;
+                    case 11: // Pulse Light
+                        raveLight1.intensity = 50 + Math.sin(performance.now() * 0.015) * 40;
+                        raveLight2.intensity = 50 + Math.cos(performance.now() * 0.015) * 40;
+                        break;
+                    case 12: // Audio Shake
+                        masterFilter.frequency.value = 5000 + Math.random() * 10000;
+                        break;
+                    case 13: // Slow Zoom
+                        cameraDistance = 25;
+                        camera.updateProjectionMatrix();
+                        break;
+                    case 14: // Phase Invert
+                        leadSynth.envelope.attack = 0.5;
+                        break;
+                    case 15: // Max Distortion
+                        bassSynth.distortion = 0.8;
+                        break;
+                    case 16: // Brief Silence
+                        Tone.Transport.pause();
+                        setTimeout(() => Tone.Transport.start(), 200);
+                        break;
+                    case 17: // Chaos Bass
+                        bassSynth.oscillator.type = Math.random() > 0.5 ? "sawtooth" : "triangle";
+                        break;
+                    case 18: // Random Color
+                        player.body.material.color.setHSL(Math.random(), 1.0, 0.5);
+                        player.head.material.color.setHSL(Math.random(), 1.0, 0.5);
+                        break;
+                    case 19: // Zoom Out
+                        cameraDistance = 35;
+                        camera.updateProjectionMatrix();
+                        break;
+                    case 20: // Dense Fog
+                        scene.fog.near = 5;
+                        scene.fog.far = 50;
+                        break;
+                    case 21: // Ghost Move
+                        player.group.position.x += Math.random() * 5 - 2.5;
+                        player.group.position.z += Math.random() * 5 - 2.5;
+                        break;
+                    case 22: // Speed Glitch
+                        mainCamRotSpeed = 0.015;
+                        break;
+                    case 23: // Particle Burst
+                        createParticleBurst();
+                        break;
+                }
+            } catch (e) {
+                console.error("Glitch effect error:", e);
+            }
+        }
+
+        function onWindowResize() {
+            try {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                renderer.setSize(width * 0.6666 - 16, height - 16);
+                sideRenderer1.setSize(width * 0.3333 - 16, height * 0.5 - 16);
+                sideRenderer2.setSize(width * 0.3333 - 16, height * 0.5 - 16);
+                if (finalQuad) {
+                    finalQuad.material.uniforms.uViewport.value.set(width * 0.6666, height);
+                }
+            } catch (e) {
+                console.error("Window resize error:", e);
+            }
+        }
+
+        function startRave() {
+            try {
+                if (isStarted) return;
+                isStarted = true;
+                Tone.start().then(() => {
+                    Tone.Transport.start();
+                    document.getElementById('overlay').style.opacity = '0';
+                    setTimeout(() => document.getElementById('overlay').style.display = 'none', 500);
+                }).catch(e => {
+                    console.error("Audio start failed:", e);
+                    alert("Failed to start audio. Check browser permissions or try a different browser.");
+                });
+            } catch (e) {
+                console.error("Start rave error:", e);
+                alert("Failed to start the rave. Check the console for details.");
+            }
+        }
+
+        function animate(time) {
+            if (time - lastFrameTime < FRAME_INTERVAL) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            const deltaTime = (time - lastFrameTime) / 1000;
+            lastFrameTime = time;
+            requestAnimationFrame(animate);
+            try {
+                if (glitchIntensity.audio < 0.1) {
+                    bitCrusher.wet.rampTo(0, 0.1);
+                    pingPongDelay.feedback.rampTo(0.2, 0.5);
+                    Tone.Transport.swing = 0;
+                } else {
+                    masterFilter.frequency.rampTo(10000 - glitchIntensity.audio * 6000, 0.1);
+                }
+                glitchIntensity.visual = Math.max(BASE_GLITCH_VISUAL, glitchIntensity.visual * 0.95);
+                glitchIntensity.audio = Math.max(0, glitchIntensity.audio * 0.95);
+                if (finalQuad) {
+                    finalQuad.material.uniforms.uTime.value = time * 0.001;
+                    finalQuad.material.uniforms.uIntensity.value = glitchIntensity.visual;
+                }
+                if (isStarted) {
+                    const hue = (time * 0.0001) % 1;
+                    raveLight1.color.setHSL(hue, 1.0, 0.7);
+                    raveLight2.color.setHSL((hue + 0.5) % 1, 1.0, 0.7);
+                    floor.rotation.y += floorRotSpeed;
+                    updateFloorTexture(time, activeEffectIndex);
+                    neonPlanes.forEach((plane, index) => {
+                        if (time - plane.lastUpdate < 500) return;
+                        plane.lastUpdate = time;
+                        plane.mesh.rotation.x += 0.002 * (index + 1);
+                        plane.mesh.rotation.y += 0.003 * (index + 1);
+                        plane.mesh.position.y = 10 + Math.sin(time * 0.002 + index) * 5;
+                        plane.mesh.material.color.setHSL((hue + index * 0.1) % 1, 1.0, 0.8);
+                        if (Math.random() < 0.1) {
+                            plane.ctx.clearRect(0, 0, 32, 32);
+                            plane.ctx.fillStyle = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                            plane.ctx.fillRect(0, 0, 32, 32);
+                            plane.ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 50%)`;
+                            plane.ctx.fillRect(0, 0, 16, 16);
+                            plane.ctx.fillRect(16, 16, 16, 16);
+                            plane.texture.needsUpdate = true;
+                        }
+                    });
+                    player.move(deltaTime);
+                    player.update(time);
+                    characters.forEach(punk => punk.update(time));
+                    particles = particles.filter(p => {
+                        p.lifetime -= 16.67;
+                        if (p.lifetime <= 0) {
+                            scene.remove(p.system);
+                            return false;
+                        }
+                        p.system.material.opacity = p.lifetime / 800;
+                        return true;
+                    });
+                    if (!isDragging) {
+                        cameraAngleX += mainCamRotSpeed;
+                    }
+                    camera.position.set(
+                        player.group.position.x + Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance,
+                        player.group.position.y + Math.sin(cameraAngleY) * cameraDistance,
+                        player.group.position.z + Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance
+                    );
+                    camera.lookAt(player.group.position);
+                    topCamera.position.set(
+                        Math.sin(time * sideCam1RotSpeed + sideCam1AngleOffset) * 20,
+                        20 + Math.sin(time * sideCam1RotSpeed * 1.5) * 3,
+                        Math.cos(time * sideCam1RotSpeed + sideCam1AngleOffset) * 20
+                    );
+                    topCamera.lookAt(0, 0, 0);
+                    sideCamera.position.set(
+                        Math.sin(time * sideCam2RotSpeed + sideCam2AngleOffset) * 20,
+                        10 + Math.cos(time * sideCam2RotSpeed * 2) * 3,
+                        Math.cos(time * sideCam2RotSpeed + sideCam2AngleOffset) * 20
+                    );
+                    sideCamera.lookAt(0, 0, 0);
+                }
+                renderer.setRenderTarget(lowresTarget);
+                renderer.render(scene, camera);
+                renderer.setRenderTarget(null);
+                renderer.render(finalScene, finalCamera);
+                sideRenderer1.setRenderTarget(sideTarget1);
+                sideRenderer1.render(scene, topCamera);
+                sideRenderer1.setRenderTarget(null);
+                sideRenderer1.render(sideScene1, finalCamera);
+                sideRenderer2.setRenderTarget(sideTarget2);
+                sideRenderer2.render(scene, sideCamera);
+                sideRenderer2.setRenderTarget(null);
+                sideRenderer2.render(sideScene2, finalCamera);
+            } catch (e) {
+                console.error("Animation error:", e.message);
+            }
+        }
+
+        setupAudio();
+        init();
+        animate(0);
+    </script>
+</body>
+</html>

@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abstract Glitch Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Retro Terminal Font for the ASCII Art */
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        /* ------------------------------------------- */
+        /* --- EFECTO CRT GLOBAL (APLICADO AL BODY) ---*/
+        /* ------------------------------------------- */
+        
+        body {
+            font-family: 'VT323', monospace; 
+            background-color: #000; 
+            color: #00ff80; 
+            width: 100vw;
+            height: 100vh;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; 
+            
+            position: relative; 
+
+            /* Variables Dinámicas CRT (Controladas por JS) */
+            --jitter-x: 0px;
+            --jitter-y: 0px;
+            --hue-shift: 0deg;
+            
+            /* Aplicar distorsión de barril (scale/skew) y jitter a TODA la aplicación */
+            transform-origin: center center;
+            transform: translate(var(--jitter-x), var(--jitter-y)) scale(1.01) skewX(0.5deg);
+            
+            /* Filtro de Fósforo y Desplazamiento de Matiz Global */
+            filter: saturate(1.3) brightness(1.2) hue-rotate(var(--hue-shift));
+            transition: transform 0.05s linear; 
+
+            /* Animación de Parpadeo de Pantalla (Flicker) */
+            animation: flicker 4s infinite;
+        }
+
+        /* OVERLAY DE LÍNEAS DE RASTREO (SCANLINES) EN TODO EL VIEWPORT */
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed; 
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            
+            /* LÍNEAS DE RASTREO FUERTES: Bandas oscuras */
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.8) 50%, transparent 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.05), rgba(0, 0, 255, 0.05)); 
+            
+            z-index: 100; 
+            background-size: 100% 4px, 3px 100%; 
+            pointer-events: none; 
+            opacity: 0.85; 
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 0.9; }
+            100% { opacity: 0.98; }
+        }
+        
+        /* ------------------------------------------- */
+        /* --- ESTRUCTURA Y ESTILOS UNIFICADOS --- */
+        /* ------------------------------------------- */
+
+        /* CONTENEDOR PRINCIPAL: Ahora ocupa casi toda la pantalla */
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem; 
+            width: 98%;
+            height: 98vh; /* Hace que ocupe casi todo el alto */
+            max-width: 1400px; /* Limite de ancho para monitores muy grandes */
+            padding: 1rem 0; 
+            position: relative; 
+            z-index: 10;
+        }
+
+        /* ESTILO UNIFICADO DEL MARCO (HOMOGENEIDAD) */
+        .console-frame {
+            background-color: #0d0d0d;
+            border: 4px solid #00ff80; 
+            box-shadow: 0 0 40px #00ff80aa;
+            padding: 0.5rem; 
+            position: relative;
+            overflow: hidden; 
+            border-radius: 12px; /* APLICA RADIO UNIFORME AL MARCO SUPERIOR E INFERIOR */
+        }
+
+        /* Wrapper de las pantallas: usa el estilo unificado */
+        #crt-wrapper {
+            flex-grow: 1; /* Ocupa el espacio restante */
+            width: 100%; 
+            /* Se ha eliminado la curvatura de pantalla CRT para lograr homogeneidad con el marco inferior. */
+        }
+
+        /* Área de entrada: usa el estilo unificado */
+        .input-area {
+            height: auto;
+            /* La homogeneidad se logra mediante la clase .console-frame */
+        }
+        
+        /* --- Individual Screen Containers --- */
+
+        .ascii-screen-container {
+            position: absolute; 
+            font-size: 16px; 
+            line-height: 1.0; 
+            overflow: hidden;
+            background-color: #000000; 
+            border: 2px solid; 
+            box-shadow: 0 0 20px;
+            transition: border-color 0.2s, box-shadow 0.2s; 
+            border-radius: 8px; 
+            padding: 0.5rem; 
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            will-change: transform, width, height;
+        }
+
+        /* Colores de las sub-pantallas */
+        #screen-1 { border-color: #00ff80; box-shadow: 0 0 25px #00ff80aa; }
+        #screen-2 { border-color: #ff00ff; box-shadow: 0 0 15px #ff00ff99; filter: blur(1px); }
+        #screen-3 { border-color: #ffff00; box-shadow: 0 0 15px #ffff0099; filter: brightness(0.7) contrast(1.5); }
+        #screen-4 { border-color: #00ffff; box-shadow: 0 0 15px #00ffff99; transform: rotateX(5deg) scaleY(0.98); }
+        #screen-5 { border-color: #ff8000; box-shadow: 0 0 15px #ff800099; filter: grayscale(0.5) saturate(2); }
+
+        .ascii-output {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            white-space: pre; 
+            font-family: inherit;
+            flex-grow: 1; 
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .ascii-default {
+            color: #00ff80; 
+            text-shadow: 0 0 7px #00ff80;
+        }
+
+        /* Removiendo estilos complejos del área de entrada para unificar el marco */
+        .input-area {
+            width: 100%; 
+        }
+
+        .input-area > label, .input-area > input {
+            position: relative;
+            z-index: 1; 
+        }
+
+        #chat-input {
+            font-family: 'VT323', monospace;
+            background-color: #000000;
+            color: #00ffff; 
+            padding: 6px 8px; 
+            border: 1px solid #00ffff;
+            box-shadow: 0 0 5px #00ffff;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            line-height: 1.2;
+            border-radius: 4px;
+        }
+        #chat-input:focus {
+            border-color: #ff00ff; 
+            box-shadow: 0 0 10px #ff00ff; 
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #app-container {
+                gap: 1rem;
+            }
+            .ascii-screen-container {
+                font-size: 10px; 
+                padding: 0.3rem;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center">
+
+    <div id="app-container">
+        
+        <!-- MÓDULO SUPERIOR: PANTALLAS DE ARTE ASCII -->
+        <div id="crt-wrapper" class="console-frame">
+            <!-- Pantalla 1: Principal (MAIN) -->
+            <div id="screen-1" class="ascii-screen-container">
+                <pre id="ascii-output-1" class="ascii-output"></pre>
+            </div>
+            
+            <!-- Pantalla 2: Auxiliar 1 -->
+            <div id="screen-2" class="ascii-screen-container">
+                <pre id="ascii-output-2" class="ascii-output"></pre>
+            </div>
+            
+            <!-- Pantalla 3: Auxiliar 2 -->
+            <div id="screen-3" class="ascii-screen-container">
+                <pre id="ascii-output-3" class="ascii-output"></pre>
+            </div>
+            
+            <!-- Pantalla 4: Auxiliar 3 -->
+            <div id="screen-4" class="ascii-screen-container">
+                <pre id="ascii-output-4" class="ascii-output"></pre>
+            </div>
+
+            <!-- Pantalla 5: Auxiliar 4 -->
+            <div id="screen-5" class="ascii-screen-container">
+                <pre id="ascii-output-5" class="ascii-output"></pre>
+            </div>
+        </div>
+
+        <!-- MÓDULO INFERIOR: ÁREA DE ENTRADA (CHAT) - Usa el mismo marco visual -->
+        <div class="input-area console-frame">
+            <label for="chat-input" class="block text-base mb-1" style="color:#00ffff; text-shadow: 0 0 5px #00ffff;">
+                // CHAT TO THE VOID:
+            </label>
+            <input type="text" id="chat-input" placeholder="Type text..."
+                   class="w-full">
+        </div>
+        
+    </div>
+
+    <script>
+        // --- SCREEN CONSTANTS ---
+        const OUTPUT_ELEMENTS = [
+            document.getElementById('ascii-output-1'),
+            document.getElementById('ascii-output-2'),
+            document.getElementById('ascii-output-3'),
+            document.getElementById('ascii-output-4'),
+            document.getElementById('ascii-output-5') 
+        ];
+        const CONTAINER_ELEMENTS = [
+            document.getElementById('screen-1'),
+            document.getElementById('screen-2'),
+            document.getElementById('screen-3'),
+            document.getElementById('screen-4'),
+            document.getElementById('screen-5')
+        ];
+        const INPUT_ELEMENT = document.getElementById('chat-input');
+        const WRAPPER_ELEMENT = document.getElementById('crt-wrapper'); 
+        const GLOBAL_EFFECT_TARGET = document.body; // Target para los efectos globales
+
+        // Common ASCII/terminal characters (Background Noise)
+        const ASCII_CHARS = " .,:-=+*#%@()[]{}oO!¡?¿/\\|";
+
+        // Abstract symbols for filling figures (Dense Texture and Border)
+        const ABSTRACT_SYMBOLS = [
+            "█", "▓", "▒", "░", "#", "$", "&", "%", "X", "O", "@", "8",
+            "=", "÷", "±", "∙", "▲", "▼", "◄", "►", "■", "□", "★", "§", "∆"
+        ];
+        
+        // Possible dimensions for artifacts (Width, Height)
+        const ARTIFACT_DIMENSIONS = [
+            { w: 30, h: 12, name: 'Block L' }, 
+            { w: 45, h: 8, name: 'Bar W' },  
+            { w: 15, h: 18, name: 'Block T' }, 
+            { w: 22, h: 6, name: 'Rect S' },  
+            { w: 28, h: 10, name: 'Rect M' } 
+        ];
+
+        // Artifact color palette (Multicolor) - Colores usados por las formas sólidas
+        const ARTIFACT_COLORS = [
+            '#00ffff', // Cyan
+            '#ff00ff', // Magenta
+            '#ffff00', // Yellow
+            '#ff8000', // Orange
+            '#00bfff', // Sky Blue
+            '#ff0080', // Fuchsia
+        ];
+
+        // Glitch/Noise Color Palette - Colores usados para el ruido aleatorio del fondo
+        const BASE_COLOR = '#00ff80'; // Neon Green (Default/Background)
+        const GLITCH_COLORS = [
+            BASE_COLOR, // Base Green (more frequent)
+            '#ff00ff',  // Magenta (less frequent)
+            '#00ffff',  // Cyan (less frequent)
+            '#ffffff',  // White (very rare flash)
+        ];
+
+        // Shared Buffer dimensions 
+        let maxBufferWidth = 0;
+        let maxBufferHeight = 0; 
+
+        // screenBuffer now stores objects {char, color}
+        let screenBuffer = []; 
+        let frameCount = 0;
+        
+        let lastSubmittedText = "";
+        let flashDuration = 0; 
+        let frozenArtifacts = []; 
+        
+        // --- DYNAMIC LAYOUT STATE ---
+        const layoutTransitionFactor = 0.01; 
+        const screenLayouts = CONTAINER_ELEMENTS.map((el, index) => {
+            const initialPos = { x: 0, y: 0, w: 100, h: index === 0 ? 50 : 25 }; 
+            return {
+                element: el,
+                current: { ...initialPos },
+                target: { ...initialPos },
+                charWidth: 0,
+                charHeight: 0,
+            };
+        });
+        
+        let layoutTimer = null;
+        const LAYOUT_UPDATE_INTERVAL = 8000; 
+
+        // --- NON-OVERLAPPING LAYOUT TEMPLATES (X, Y, W, H in %) ---
+        const NON_OVERLAPPING_LAYOUTS = [
+            // Diseño 0: División Vertical (Izquierda Grande, Derecha en Columna)
+            [
+                { x: 2, y: 2, w: 50, h: 96 }, 
+                { x: 54, y: 2, w: 42, h: 22 },  
+                { x: 54, y: 26, w: 42, h: 22 }, 
+                { x: 54, y: 50, w: 42, h: 22 }, 
+                { x: 54, y: 74, w: 42, h: 22 }  
+            ],
+            // Diseño 1: División Horizontal (Arriba Grande, Abajo en Fila)
+            [
+                { x: 2, y: 2, w: 96, h: 65 }, 
+                { x: 2, y: 69, w: 22, h: 29 },    
+                { x: 26, y: 69, w: 22, h: 29 },   
+                { x: 50, y: 69, w: 22, h: 29 },   
+                { x: 74, y: 69, w: 22, h: 29 }    
+            ],
+            // Diseño 2: Mix de Cuadrantes (2x2 con una celda dividida)
+            [
+                { x: 2, y: 2, w: 46, h: 47 }, 
+                { x: 50, y: 2, w: 46, h: 47 }, 
+                { x: 2, y: 51, w: 46, h: 47 }, 
+                { x: 50, y: 51, w: 46, h: 23 }, 
+                { x: 50, y: 76, w: 46, h: 22 }   
+            ]
+        ];
+
+
+        // --- SCREEN INITIALIZATION AND RESIZING ---
+
+        function initializeScreen() {
+            const referenceElement = document.getElementById('ascii-output-1');
+            const preElementStyle = window.getComputedStyle(referenceElement);
+            const lineHeight = parseInt(preElementStyle.lineHeight) || 16;
+            const charWidth = parseInt(preElementStyle.fontSize) * 0.58 || 9.28; 
+
+            const wrapperHeight = WRAPPER_ELEMENT.clientHeight;
+            const wrapperWidth = WRAPPER_ELEMENT.clientWidth;
+            
+            const maxHeightInChars = Math.floor(wrapperHeight / lineHeight) - 1; 
+            const maxWidthInChars = Math.floor(wrapperWidth / charWidth) - 1; 
+
+            maxBufferWidth = Math.max(maxWidthInChars, 80);
+            maxBufferHeight = Math.max(maxHeightInChars, 30);
+            
+            screenBuffer = Array(maxBufferHeight).fill(null).map(() => 
+                Array(maxBufferWidth).fill(null).map(() => ({ char: ' ', color: BASE_COLOR }))
+            );
+            
+            if (!layoutTimer) {
+                updateTargets(true); 
+                layoutTimer = setInterval(updateTargets, LAYOUT_UPDATE_INTERVAL);
+            }
+        }
+        
+        function calculateScreenCharDimensions(layout) {
+            const containerHeight = layout.element.clientHeight;
+            const containerWidth = layout.element.clientWidth;
+            
+            const preElement = layout.element.querySelector('.ascii-output');
+            const preElementStyle = window.getComputedStyle(preElement);
+            const lineHeight = parseInt(preElementStyle.lineHeight) || 16;
+            const charWidthPx = parseInt(preElementStyle.fontSize) * 0.58 || 9.28; 
+
+            layout.charHeight = Math.floor(containerHeight / lineHeight) - 1;
+            layout.charWidth = Math.floor(containerWidth / charWidthPx);
+            
+            layout.charHeight = Math.min(layout.charHeight, maxBufferHeight);
+            layout.charWidth = Math.min(layout.charWidth, maxBufferWidth);
+        }
+
+        window.onload = initializeScreen;
+        window.onresize = initializeScreen;
+
+        // --- DYNAMIC LAYOUT LOGIC ---
+
+        function updateTargets(initialize = false) {
+            const selectedLayout = NON_OVERLAPPING_LAYOUTS[Math.floor(Math.random() * NON_OVERLAPPING_LAYOUTS.length)];
+            
+            screenLayouts.forEach((layout, i) => {
+                layout.target = selectedLayout[i];
+                
+                if (initialize) {
+                    layout.current = selectedLayout[i];
+                }
+            });
+        }
+        
+        function updateLayoutSmoothly() {
+            screenLayouts.forEach(layout => {
+                const lerp = (current, target, factor) => current + (target - current) * factor;
+
+                layout.current.x = lerp(layout.current.x, layout.target.x, layoutTransitionFactor);
+                layout.current.y = lerp(layout.current.y, layout.target.y, layoutTransitionFactor);
+                layout.current.w = lerp(layout.current.w, layout.target.w, layoutTransitionFactor);
+                layout.current.h = lerp(layout.current.h, layout.target.h, layoutTransitionFactor);
+
+                layout.element.style.left = `${layout.current.x}%`;
+                layout.element.style.top = `${layout.current.y}%`;
+                layout.element.style.width = `${layout.current.w}%`;
+                layout.element.style.height = `${layout.current.h}%`;
+            });
+        }
+
+
+        // --- ARPEGIADOR LOGIC ---
+        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let arpeggioInterval = null;
+        const noteFrequencies = [261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.25]; // C major scale
+        const waveforms = ['sine', 'square', 'sawtooth', 'triangle'];
+
+        function playNote(frequency, duration, waveform = 'sawtooth') {
+            let oscillator = audioCtx.createOscillator();
+            oscillator.type = waveform;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            let gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.value = 0.3;
+
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+            }, duration);
+        }
+
+        function startRandomArpeggiator() {
+            if (arpeggioInterval) {
+                clearInterval(arpeggioInterval);
+            }
+
+            // Randomize parameters
+            const numNotes = Math.floor(Math.random() * 5 + 3); // 3 to 7 notes
+            let notes = [];
+            for (let i = 0; i < numNotes; i++) {
+                const randomNote = noteFrequencies[Math.floor(Math.random() * noteFrequencies.length)];
+                notes.push(randomNote);
+            }
+            const speed = Math.floor(Math.random() * 100 + 100); // 100 to 200 ms interval
+            const duration = Math.floor(Math.random() * 50 + 80); // 80 to 130 ms note length
+            const waveform = waveforms[Math.floor(Math.random() * waveforms.length)];
+
+            let index = 0;
+            arpeggioInterval = setInterval(() => {
+                playNote(notes[index], duration, waveform);
+                index = (index + 1) % notes.length;
+            }, speed);
+        }
+
+
+        // --- CHAT/ENTER EVENT LOGIC ---
+
+        INPUT_ELEMENT.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                const text = INPUT_ELEMENT.value.trim();
+                if (text) {
+                    lastSubmittedText = text;
+                    flashDuration = 15; 
+                    INPUT_ELEMENT.value = ""; 
+                    
+                    const dimension = ARTIFACT_DIMENSIONS[Math.floor(Math.random() * ARTIFACT_DIMENSIONS.length)];
+                    const randomColor = ARTIFACT_COLORS[Math.floor(Math.random() * ARTIFACT_COLORS.length)];
+                    
+                    const newArtifact = {
+                        text: text.toUpperCase(), 
+                        baseSymbol: ABSTRACT_SYMBOLS[Math.floor(Math.random() * ABSTRACT_SYMBOLS.length)],
+                        borderSymbol: ABSTRACT_SYMBOLS[Math.floor(Math.random() * ABSTRACT_SYMBOLS.length)], 
+                        width: dimension.w,
+                        height: dimension.h, 
+                        shapeName: dimension.name,
+                        colorAccent: randomColor, 
+                        
+                        row: Math.floor(Math.random() * (maxBufferHeight - dimension.h - 4)) + 2, 
+                        col: Math.floor(Math.random() * (maxBufferWidth - dimension.w - 4)) + 2,
+                    };
+                    frozenArtifacts.push(newArtifact);
+
+                    // Start randomized arpeggiator
+                    startRandomArpeggiator();
+                }
+            }
+        });
+
+
+        // --- ASCII GENERATION LOGIC ---
+
+        function getRandomChar(influenceChar = null) {
+            if (Math.random() < 0.90 && influenceChar) {
+                return influenceChar;
+            }
+            return ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)];
+        }
+
+        function setBufferChar(r, c, char, color) {
+            if (r >= 0 && r < maxBufferHeight && c >= 0 && c < maxBufferWidth) {
+                screenBuffer[r][c] = { char, color };
+            }
+        }
+        
+        function applyBurstEffect() {
+            const screen1 = document.getElementById('screen-1');
+            if (flashDuration > 0) {
+                const colorIndex = frameCount % ARTIFACT_COLORS.length;
+                const accentColor = ARTIFACT_COLORS[colorIndex];
+                
+                screen1.style.borderColor = accentColor;
+                screen1.style.boxShadow = `0 0 30px ${accentColor}`;
+            } else {
+                screen1.style.borderColor = BASE_COLOR; 
+                screen1.style.boxShadow = `0 0 25px ${BASE_COLOR}99`;
+            }
+        }
+
+        function generateFrameBuffer() {
+            const input = INPUT_ELEMENT.value;
+            const inputLength = input.length;
+            const activeInput = inputLength > 0 ? input : lastSubmittedText;
+
+            if (flashDuration > 0) {
+                flashDuration--;
+            }
+            applyBurstEffect(); 
+
+            // 1. Ruido de Fondo / Glitch / Burst
+            for (let r = 0; r < maxBufferHeight; r++) {
+                for (let c = 0; c < maxBufferWidth; c++) {
+                    
+                    let newChar = screenBuffer[r][c].char; 
+                    let newColor = BASE_COLOR;
+
+                    if (flashDuration > 0 && activeInput.length > 0) {
+                        const flashChar = activeInput[frameCount % activeInput.length].toUpperCase();
+                        if (Math.random() < flashDuration / 15) { 
+                             newChar = flashChar;
+                             newColor = ARTIFACT_COLORS[frameCount % ARTIFACT_COLORS.length];
+                        }
+                    } else {
+                        let influenceChar = activeInput[Math.floor(Math.random() * activeInput.length)] || null;
+                        
+                        if (Math.random() < 0.15) {
+                            newChar = getRandomChar(influenceChar);
+                        }
+                        
+                        if (Math.random() < 0.10) { 
+                            newColor = GLITCH_COLORS[Math.floor(Math.random() * GLITCH_COLORS.length)];
+                        } else {
+                            newColor = BASE_COLOR;
+                        }
+                    }
+                    setBufferChar(r, c, newChar, newColor);
+                }
+            }
+            
+            // 2. Aplicar Artefactos Congelados (Acumulación)
+            frozenArtifacts.forEach((artifact) => {
+                const { text: artifactText, baseSymbol, borderSymbol, width: aWidth, height: aHeight, colorAccent } = artifact;
+                const activeLength = activeInput.length;
+                
+                let charIndex = 0; 
+                
+                for (let r = 0; r < aHeight; r++) { 
+                    for (let c = 0; c < aWidth; c++) { 
+                        const targetRow = artifact.row + r;
+                        const targetCol = artifact.col + c;
+
+                        if (targetRow >= maxBufferHeight || targetCol >= maxBufferWidth) continue;
+
+                        let charToDraw;
+                        let colorToDraw = colorAccent; 
+
+                        if (r === 0 || r === aHeight - 1 || c === 0 || c === aWidth - 1) {
+                            if (Math.random() < 0.95) {
+                                charToDraw = borderSymbol;
+                            } else {
+                                charToDraw = getRandomChar();
+                                colorToDraw = BASE_COLOR; 
+                            }
+                        } else {
+                            
+                            if (Math.random() < 0.12) {
+                                charToDraw = ' '; 
+                                colorToDraw = '#000000'; 
+                            } 
+                            else {
+                                colorToDraw = colorAccent; 
+                                
+                                if (Math.random() < 0.35) { 
+                                    charToDraw = artifactText[charIndex % artifactText.length];
+                                } 
+                                else if (Math.random() < 0.35) { 
+                                    charToDraw = baseSymbol;
+                                } 
+                                else {
+                                    const randomSymbol = ABSTRACT_SYMBOLS[Math.floor(Math.random() * ABSTRACT_SYMBOLS.length)];
+                                    charToDraw = randomSymbol; 
+                                    colorToDraw = colorAccent; 
+                                }
+                            }
+                        }
+                        
+                        if (activeLength > 0 && Math.random() < 0.03) { 
+                            charToDraw = activeInput[charIndex % activeInput.length].toUpperCase();
+                            colorToDraw = ARTIFACT_COLORS[frameCount % ARTIFACT_COLORS.length]; 
+                        }
+                        
+                        setBufferChar(targetRow, targetCol, charToDraw, colorToDraw);
+                        charIndex++;
+                    }
+                }
+            });
+
+            frameCount++;
+        }
+
+        /**
+         * Renderiza el buffer de pantalla compartido a un elemento de salida específico con un efecto de visualización.
+         */
+        function renderScreen(outputElement, screenIndex) {
+            let finalHtml = '';
+            const currentFrame = frameCount;
+            const layout = screenLayouts[screenIndex];
+
+            calculateScreenCharDimensions(layout);
+
+            const height = layout.charHeight;
+            const width = layout.charWidth;
+            
+            const cycleSpeed = 3; 
+            const wipeProgress = (currentFrame * cycleSpeed) % 100; 
+            
+            for (let r = 0; r < height; r++) {
+                let line = '';
+                
+                for (let c = 0; c < width; c++) {
+                    
+                    let cell = screenBuffer[r][c];
+                    
+                    let charToDisplay = cell.char;
+                    let colorToDisplay = cell.color;
+                    let renderCell = true;
+
+                    switch (screenIndex) {
+                        case 0: // Pantalla 1 (MAIN) - Vista Normal
+                            break;
+
+                        case 1: // Pantalla 2 (AUX1) - Barrido Vertical desde Arriba (Wipe Down)
+                            const threshold1 = Math.floor(height * (wipeProgress / 100));
+                            if (r < threshold1) {
+                                // Muestra el contenido
+                            } else {
+                                charToDisplay = getRandomChar();
+                                colorToDisplay = BASE_COLOR; 
+                            }
+                            break;
+                        
+                        case 2: // Pantalla 3 (AUX2) - Barrido Vertical desde Abajo (Wipe Up)
+                            const threshold2 = Math.floor(height * (1 - (wipeProgress / 100)));
+                            if (r < threshold2) {
+                                charToDisplay = getRandomChar();
+                                colorToDisplay = BASE_COLOR;
+                            } else {
+                                // Muestra el contenido
+                            }
+                            break;
+
+                        case 3: // Pantalla 4 (AUX3) - Scroll Horizontal infinito hacia la Izquierda
+                            const shift = currentFrame % maxBufferWidth; 
+                            const shiftedC = (c + shift) % maxBufferWidth;
+                            cell = screenBuffer[r][shiftedC];
+                            charToDisplay = cell.char;
+                            colorToDisplay = cell.color;
+                            break;
+
+                        case 4: // Pantalla 5 (AUX4) - Barrido Horizontal de Izquierda a Derecha
+                            const xThreshold = Math.floor(width * (wipeProgress / 100));
+                            if (c >= xThreshold) {
+                                 charToDisplay = ' ';
+                                 colorToDisplay = '#000000'; 
+                            }
+                            break;
+                    }
+                    
+                    if (renderCell) {
+                        if (colorToDisplay === '#000000') {
+                             line += `<span style="color:${colorToDisplay};">${charToDisplay}</span>`;
+                        }
+                        else if (colorToDisplay !== BASE_COLOR) {
+                            line += `<span style="color:${colorToDisplay};text-shadow:0 0 10px ${colorToDisplay};">${charToDisplay}</span>`;
+                        } else {
+                            line += `<span class="ascii-default">${charToDisplay}</span>`;
+                        }
+                    } else {
+                        line += charToDisplay.replace(/./g, ' '); 
+                    }
+                }
+                finalHtml += line + '\n';
+            }
+
+            outputElement.innerHTML = finalHtml;
+        }
+
+
+        // --- BUCLE DE ANIMACIÓN Y EFECTO CRT DINÁMICO ---
+
+        let lastTime = 0;
+        const FPS = 30;
+        const interval = 1000 / FPS;
+
+        function animate(timestamp) {
+            if (timestamp - lastTime > interval) {
+                if (maxBufferWidth > 0 && maxBufferHeight > 0) {
+                    
+                    // 1. APLICAR EL EFECTO CRT DINÁMICO (JITTER/HUE) AL BODY
+                    const jitterX = (Math.random() - 0.5) * 1.5; 
+                    const jitterY = (Math.random() - 0.5) * 1.5; 
+                    
+                    const hueShift = Math.sin(timestamp / 2000) * 2 + (Math.random() - 0.5) * 1; 
+
+                    // Aplicar las variables CSS al BODY (target global)
+                    GLOBAL_EFFECT_TARGET.style.setProperty('--jitter-x', `${jitterX}px`);
+                    GLOBAL_EFFECT_TARGET.style.setProperty('--jitter-y', `${jitterY}px`);
+                    GLOBAL_EFFECT_TARGET.style.setProperty('--hue-shift', `${hueShift}deg`);
+
+
+                    // 2. Aplicar la transición suave del layout
+                    updateLayoutSmoothly();
+                    
+                    // 3. Generar el buffer compartido
+                    generateFrameBuffer();
+                    
+                    // 4. Renderizar el buffer a las 5 pantallas
+                    OUTPUT_ELEMENTS.forEach((element, index) => renderScreen(element, index));
+
+                } else {
+                    initializeScreen(); 
+                }
+                lastTime = timestamp;
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Iniciar el bucle de animación
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
