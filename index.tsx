@@ -339,6 +339,20 @@ function openAlbumPlayerWindow(album: MusicAlbum) {
     });
 }
 
+function openDjObliWindow() {
+    const soundcloudIframe = `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%23000000&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`;
+
+    createWindow({
+        title: 'DJ OBLI - Liminal Mixes',
+        x: Math.random() * 200 + 150,
+        y: Math.random() * 150 + 100,
+        width: 450,
+        height: 450,
+        resizable: true,
+        content: soundcloudIframe
+    });
+}
+
 function openMusicWindow() {
     const folderContent = document.createElement('div');
     folderContent.className = 'folder-grid';
@@ -356,6 +370,19 @@ function openMusicWindow() {
         iconEl.addEventListener('click', () => iconEl.focus());
         folderContent.appendChild(iconEl);
     });
+
+    // Add DJ OBLI Icon
+    const djIconEl = document.createElement('div');
+    djIconEl.className = 'folder-icon';
+    djIconEl.setAttribute('tabindex', '0');
+    djIconEl.innerHTML = `
+        <div class="icon-visual">🎧</div>
+        <div class="icon-label">DJ OBLI</div>
+        <div class="icon-sublabel">Liminal Mixes</div>
+    `;
+    djIconEl.addEventListener('dblclick', () => openDjObliWindow());
+    djIconEl.addEventListener('click', () => djIconEl.focus());
+    folderContent.appendChild(djIconEl);
 
     createWindow({
         title: 'Music',
