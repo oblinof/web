@@ -399,64 +399,30 @@ function openTrashWindow() {
     });
 }
 
-async function openDatafallWindow() {
-    try {
-        const response = await fetch('./datafall.html');
-        if (!response.ok) {
-            throw new Error(`Failed to fetch datafall.html: ${response.statusText}`);
-        }
-        const htmlContent = await response.text();
-        const escapedHtml = htmlContent.replace(/"/g, '&quot;');
-
-        createWindow({
-            title: 'Datafall',
-            x: 150, y: 30, width: 700, height: 500,
-            resizable: true,
-            allowFullscreen: true,
-            content: `<iframe 
-                        srcdoc="${escapedHtml}" 
-                        style="width:100%; height:100%; border:0;" 
-                        sandbox="allow-scripts allow-same-origin"
-                      ></iframe>`
-        });
-    } catch (error) {
-        console.error("Failed to load Datafall content:", error);
-        createWindow({
-            title: 'Error',
-            x: 250, y: 150, width: 320, height: 140,
-            content: `<div class="text-content"><p>Could not load the Datafall application.</p><p>Please check the console for more details.</p></div>`
-        });
-    }
+function openDatafallWindow() {
+    createWindow({
+        title: 'Datafall',
+        x: 150, y: 30, width: 700, height: 500,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://datafall.vercel.app/" 
+                    style="width:100%; height:100%; border:0;"
+                  ></iframe>`
+    });
 }
 
-async function openPaintdelicWindow() {
-    try {
-        const response = await fetch('./paintdelic.html');
-        if (!response.ok) {
-            throw new Error(`Failed to fetch paintdelic.html: ${response.statusText}`);
-        }
-        const htmlContent = await response.text();
-        const escapedHtml = htmlContent.replace(/"/g, '&quot;');
-
-        createWindow({
-            title: 'Paintdelic',
-            x: 180, y: 50, width: 800, height: 600,
-            resizable: true,
-            allowFullscreen: true,
-            content: `<iframe 
-                        srcdoc="${escapedHtml}" 
-                        style="width:100%; height:100%; border:0;" 
-                        sandbox="allow-scripts allow-same-origin"
-                      ></iframe>`
-        });
-    } catch (error) {
-        console.error("Failed to load Paintdelic content:", error);
-        createWindow({
-            title: 'Error',
-            x: 250, y: 150, width: 320, height: 140,
-            content: `<div class="text-content"><p>Could not load the Paintdelic application.</p><p>Please check the console for more details.</p></div>`
-        });
-    }
+function openPaintdelicWindow() {
+    createWindow({
+        title: 'Paintdelic',
+        x: 180, y: 50, width: 800, height: 600,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://paintedelic.vercel.app/" 
+                    style="width:100%; height:100%; border:0;"
+                  ></iframe>`
+    });
 }
 
 function openAmbientPortableWindow() {
@@ -485,34 +451,17 @@ function openEntityCollabWindow() {
     });
 }
 
-async function openWordArpWindow() {
-    try {
-        const response = await fetch('./word_arp.html');
-        if (!response.ok) {
-            throw new Error(`Failed to fetch word_arp.html: ${response.statusText}`);
-        }
-        const htmlContent = await response.text();
-        const escapedHtml = htmlContent.replace(/"/g, '&quot;');
-
-        createWindow({
-            title: 'Word Arp',
-            x: 250, y: 100, width: 900, height: 600,
-            resizable: true,
-            allowFullscreen: true,
-            content: `<iframe 
-                        srcdoc="${escapedHtml}" 
-                        style="width:100%; height:100%; border:0;" 
-                        sandbox="allow-scripts allow-same-origin"
-                      ></iframe>`
-        });
-    } catch (error) {
-        console.error("Failed to load Word Arp content:", error);
-        createWindow({
-            title: 'Error',
-            x: 250, y: 150, width: 320, height: 140,
-            content: `<div class="text-content"><p>Could not load the Word Arp application.</p><p>Please check the console for more details.</p></div>`
-        });
-    }
+function openWordArpWindow() {
+    createWindow({
+        title: 'Word Arp',
+        x: 250, y: 100, width: 900, height: 600,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://wordarp.vercel.app/" 
+                    style="width:100%; height:100%; border:0;" 
+                  ></iframe>`
+    });
 }
 
 function openExtractivistRealismWindow() {
