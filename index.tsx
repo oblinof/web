@@ -472,34 +472,17 @@ function openAmbientPortableWindow() {
     });
 }
 
-async function openEntityCollabWindow() {
-    try {
-        const response = await fetch('./entity_collab.html');
-        if (!response.ok) {
-            throw new Error(`Failed to fetch entity_collab.html: ${response.statusText}`);
-        }
-        const htmlContent = await response.text();
-        const escapedHtml = htmlContent.replace(/"/g, '&quot;');
-
-        createWindow({
-            title: 'Entity Collab',
-            x: 220, y: 80, width: 640, height: 480,
-            resizable: true,
-            allowFullscreen: true,
-            content: `<iframe 
-                        srcdoc="${escapedHtml}" 
-                        style="width:100%; height:100%; border:0;" 
-                        sandbox="allow-scripts allow-same-origin"
-                      ></iframe>`
-        });
-    } catch (error) {
-        console.error("Failed to load Entity Collab content:", error);
-        createWindow({
-            title: 'Error',
-            x: 250, y: 150, width: 320, height: 140,
-            content: `<div class="text-content"><p>Could not load the Entity Collab application.</p><p>Please check the console for more details.</p></div>`
-        });
-    }
+function openEntityCollabWindow() {
+    createWindow({
+        title: 'Entity Collab',
+        x: 220, y: 80, width: 640, height: 480,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://entity-collab.vercel.app/" 
+                    style="width:100%; height:100%; border:0;"
+                  ></iframe>`
+    });
 }
 
 async function openWordArpWindow() {
