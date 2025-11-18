@@ -28,7 +28,6 @@ interface AppDefinition {
     name: string;
     icon: string;
     action: () => void;
-    position?: { x: number; y: number };
 }
 
 
@@ -89,6 +88,8 @@ let desktopElement: HTMLElement | null = null;
 
 function createWindow(options: Partial<AppWindow>) {
     highestZIndex++;
+    const isMobile = window.innerWidth < 768;
+
     const newWindow: AppWindow = {
         id: nextWindowId++,
         title: 'Untitled',
@@ -104,6 +105,16 @@ function createWindow(options: Partial<AppWindow>) {
         allowFullscreen: false,
         ...options,
     };
+
+    if (isMobile) {
+        const desktopHeight = desktopElement?.clientHeight ?? (window.innerHeight - 50);
+        newWindow.x = 10;
+        newWindow.y = 10;
+        newWindow.width = window.innerWidth - 25;
+        newWindow.height = desktopHeight - 20;
+        newWindow.isDraggable = false;
+        newWindow.resizable = false;
+    }
 
     const windowEl = document.createElement('div');
     windowEl.className = `window ${newWindow.className || ''}`;
@@ -279,19 +290,18 @@ function makeResizable(element: HTMLElement, windowState: AppWindow) {
     resizeHandle.addEventListener('mousedown', onMouseDown);
 }
 
-function createDesktopIcon(name: string, visual: string, x: number, y: number, onDoubleClick: () => void) {
+function createDesktopIcon(name: string, visual: string, onClick: () => void, x: number, y: number) {
     const iconEl = document.createElement('div');
     iconEl.className = 'desktop-icon';
+    iconEl.setAttribute('tabindex', '0');
     iconEl.style.left = `${x}px`;
     iconEl.style.top = `${y}px`;
-    iconEl.setAttribute('tabindex', '0');
     iconEl.innerHTML = `
         <div class="icon-visual">${visual}</div>
         <div class="icon-label">${name}</div>
     `;
     
-    iconEl.addEventListener('dblclick', onDoubleClick);
-    iconEl.addEventListener('click', () => iconEl.focus());
+    iconEl.addEventListener('click', onClick);
     
     desktopElement?.appendChild(iconEl);
 }
@@ -513,20 +523,18 @@ function openSoundcloudWindow() {
 
 
 const appDefinitions: AppDefinition[] = [
-    { id: 'music', name: 'Music', icon: '♫', action: openMusicWindow, position: { x: 30, y: 40 } },
-    { id: 'gallery', name: 'Gallery', icon: '🖼️', action: openGalleryWindow, position: { x: 30, y: 140 } },
-    { id: 'contact', name: 'Contact', icon: '✉️', action: openContactWindow, position: { x: 30, y: 240 } },
-    { id: 'trash', name: 'Trash', icon: '🗑️', action: openTrashWindow, position: { x: 30, y: 340 } },
-    
-    { id: 'datafall', name: 'Datafall', icon: '💧', action: openDatafallWindow, position: { x: 130, y: 40 } },
-    { id: 'paintdelic', name: 'Paintdelic', icon: '🎨', action: openPaintdelicWindow, position: { x: 130, y: 140 } },
-    { id: 'ambient', name: 'Ambient Portable', icon: '🔊', action: openAmbientPortableWindow, position: { x: 130, y: 240 } },
-    { id: 'entity', name: 'Entity Collab', icon: '👾', action: openEntityCollabWindow, position: { x: 130, y: 340 } },
-
-    { id: 'wordarp', name: 'Word Arp', icon: '🎹', action: openWordArpWindow, position: { x: 230, y: 40 } },
-    { id: 'realism', name: 'Extractivist Realism', icon: '👁️‍🗨️', action: openExtractivistRealismWindow, position: { x: 230, y: 140 } },
-    { id: 'ravecat', name: 'Ravecat', icon: '🐈', action: openRavecatWindow, position: { x: 230, y: 240 } },
-    { id: 'psyballz', name: 'PsyBallz', icon: '🔮', action: openPsyBallzWindow, position: { x: 230, y: 340 } },
+    { id: 'music', name: 'Music', icon: '♫', action: openMusicWindow },
+    { id: 'gallery', name: 'Gallery', icon: '🖼️', action: openGalleryWindow },
+    { id: 'contact', name: 'Contact', icon: '✉️', action: openContactWindow },
+    { id: 'trash', name: 'Trash', icon: '🗑️', action: openTrashWindow },
+    { id: 'datafall', name: 'Datafall', icon: '💧', action: openDatafallWindow },
+    { id: 'paintdelic', name: 'Paintdelic', icon: '🎨', action: openPaintdelicWindow },
+    { id: 'ambient', name: 'Ambient Portable', icon: '🔊', action: openAmbientPortableWindow },
+    { id: 'entity', name: 'Entity Collab', icon: '👾', action: openEntityCollabWindow },
+    { id: 'wordarp', name: 'Word Arp', icon: '🎹', action: openWordArpWindow },
+    { id: 'realism', name: 'Extractivist Realism', icon: '👁️‍🗨️', action: openExtractivistRealismWindow },
+    { id: 'ravecat', name: 'Ravecat', icon: '🐈', action: openRavecatWindow },
+    { id: 'psyballz', name: 'PsyBallz', icon: '🔮', action: openPsyBallzWindow },
 ];
 
 
@@ -543,9 +551,14 @@ function render() {
             to { transform: translateX(-50%); }
         }
         :root { --font-family: 'VT323', monospace; }
+        html, body {
+            margin: 0; padding: 0; 
+            height: 100%;
+            overflow: hidden;
+        }
         body {
-            margin: 0; padding: 0; font-family: var(--font-family); color: #000;
-            overflow: hidden; background-color: #ccc;
+            font-family: var(--font-family); color: #000;
+            background-color: #ccc;
             background-image: repeating-conic-gradient(#aaa 0% 25%, #ccc 0% 50%);
             background-size: 2px 2px; image-rendering: pixelated;
             animation: subtle-move 2s linear infinite;
@@ -764,6 +777,62 @@ function render() {
             z-index: 20000 !important;
         }
         .window.fullscreen .resize-handle { display: none; }
+        
+        /* --- Responsive Design for Mobile --- */
+        @media (max-width: 768px) {
+            .desktop {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                padding: 15px;
+                justify-content: center;
+                align-content: flex-start;
+                overflow-y: auto; /* Allow scrolling for many icons */
+            }
+
+            .desktop-icon {
+                position: relative !important; /* Override absolute positioning */
+                left: auto !important;
+                top: auto !important;
+                width: 70px; /* Slightly smaller icons */
+            }
+            
+            .desktop-icon .icon-visual {
+                width: 45px;
+                height: 45px;
+                font-size: 28px;
+            }
+            
+            .desktop-icon .icon-label {
+                font-size: 14px;
+            }
+
+            .top-bar {
+                height: 30px;
+            }
+            .brand {
+                font-size: 16px;
+            }
+            .menu-item {
+                font-size: 14px;
+                padding: 2px 3px;
+            }
+            
+            .bottom-bar {
+                height: 20px;
+            }
+            .scrolling-text-container span {
+                font-size: 14px;
+            }
+
+            .resize-handle {
+                display: none !important;
+            }
+            
+            .title-bar {
+                cursor: default;
+            }
+        }
     `;
     document.head.appendChild(style);
 
@@ -798,11 +867,29 @@ function render() {
 
     desktopElement = root.querySelector('.desktop');
 
-    // Create desktop icons from definitions
-    appDefinitions.forEach(app => {
-        if (app.position) {
-            createDesktopIcon(app.name, app.icon, app.position.x, app.position.y, app.action);
-        }
+    const iconGrid = [
+        ['music', 'gallery', 'contact', 'trash'],
+        ['datafall', 'paintdelic', 'ambient', 'entity'],
+        ['wordarp', 'realism', 'ravecat', 'psyballz'],
+    ];
+
+    const iconMap: { [key: string]: AppDefinition } = {};
+    appDefinitions.forEach(app => iconMap[app.id] = app);
+    
+    const iconSpacingX = 90;
+    const iconSpacingY = 100;
+    const initialOffsetX = 20;
+    const initialOffsetY = 20;
+
+    iconGrid.forEach((row, rowIndex) => {
+        row.forEach((id, colIndex) => {
+            const app = iconMap[id];
+            if (app) {
+                const x = initialOffsetX + colIndex * iconSpacingX;
+                const y = initialOffsetY + rowIndex * iconSpacingY;
+                createDesktopIcon(app.name, app.icon, app.action, x, y);
+            }
+        });
     });
     
     // --- Top Bar Logic ---
