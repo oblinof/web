@@ -1,4 +1,3 @@
-
 // --- State Management ---
 interface AppWindow {
     id: number;
@@ -324,13 +323,18 @@ function openGalleryWindow() {
 
 function openContactWindow() {
      createWindow({
-        title: 'Contact',
-        x: 250, y: 150, width: 320, height: 140,
+        title: 'About',
+        x: 250, y: 150, width: 400, height: 320,
         content: `
-            <ul class="contact-list">
-                <li>Email: oblinof@gmail.com</li>
-                <li>Socials: <a href="https://linktr.ee/oblinof" target="_blank" rel="noopener noreferrer">linktr.ee/oblinof</a></li>
-            </ul>
+            <div class="text-content" style="text-align: center;">
+                <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
+                <p style="margin: 15px 0;">I’ve been crafting audiovisual experiences since 2007. This is my gallery + workshop - selected A&V pieces and the brand-new tools I vibecode for all of us. WIP.</p>
+                <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
+                <ul class="contact-list" style="margin-top: 20px;">
+                    <li>Email: oblinof@gmail.com</li>
+                    <li>Socials: <a href="https://linktr.ee/oblinof" target="_blank" rel="noopener noreferrer">linktr.ee/oblinof</a></li>
+                </ul>
+            </div>
         `
     });
 }
@@ -453,7 +457,7 @@ function openEntityCollabWindow() {
         resizable: true,
         allowFullscreen: true,
         content: `<iframe 
-                    src="https://entity-collab.vercel.app/" 
+                    src="entity_collab.html" 
                     style="width:100%; height:100%; border:0;"
                   ></iframe>`
     });
