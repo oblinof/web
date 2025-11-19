@@ -1,3 +1,4 @@
+
 // --- State Management ---
 interface AppWindow {
     id: number;
@@ -311,27 +312,24 @@ function createDesktopIcon(name: string, visual: string, onClick: () => void, x:
 function openGalleryWindow() {
     createWindow({
         title: 'Gallery',
-        x: 200, y: 100, width: 380, height: 280,
-        content: `
-            <div class="gallery-grid">
-                <div class="gallery-item"><div class="img-placeholder"></div><span>Project Alpha</span></div>
-                <div class="gallery-item"><div class="img-placeholder"></div><span>Study in B&W</span></div>
-                <div class="gallery-item"><div class="img-placeholder"></div><span>Digitalscape</span></div>
-                <div class="gallery-item"><div class="img-placeholder"></div><span>Retrofuture</span></div>
-            </div>
-        `
+        x: 100, y: 50, width: 800, height: 600,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://artviewer.vercel.app/" 
+                    style="width:100%; height:100%; border:0;"
+                  ></iframe>`
     });
 }
 
 function openContactWindow() {
      createWindow({
         title: 'Contact',
-        x: 250, y: 150, width: 280, height: 160,
+        x: 250, y: 150, width: 320, height: 140,
         content: `
             <ul class="contact-list">
-                <li>Email: oblinof@web.com</li>
-                <li>Social: @oblinof_art</li>
-                <li>Web: oblinof.com</li>
+                <li>Email: oblinof@gmail.com</li>
+                <li>Socials: <a href="https://linktr.ee/oblinof" target="_blank" rel="noopener noreferrer">linktr.ee/oblinof</a></li>
             </ul>
         `
     });
@@ -718,6 +716,9 @@ function render() {
 
         .contact-list { list-style: none; padding: 15px; margin: 0; font-size: 16px; }
         .contact-list li { padding: 5px 0; }
+        .contact-list a { color: #0000ff; text-decoration: underline; }
+        .contact-list a:hover { color: #ff00ff; }
+
 
         .resize-handle {
             position: absolute;
