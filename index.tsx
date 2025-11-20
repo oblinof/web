@@ -1,3 +1,4 @@
+
 // --- State Management ---
 interface AppWindow {
     id: number;
@@ -328,7 +329,7 @@ function openContactWindow() {
         content: `
             <div class="text-content" style="text-align: center;">
                 <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
-                <p style="margin: 15px 0;">I’ve been crafting audiovisual experiences since 2007. This is my gallery + workshop - selected A&V pieces and the brand-new tools I vibecode for all of us. WIP.</p>
+                <p style="margin: 15px 0;">I’ve been crafting audiovisual experiences since 2007. This is my gallery + workshop - selected A&V pieces and a brand-new tools to metamodel your perception and create more art for all of us. WIP.</p>
                 <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
                 <ul class="contact-list" style="margin-top: 20px;">
                     <li>Email: oblinof@gmail.com</li>
@@ -457,7 +458,7 @@ function openEntityCollabWindow() {
         resizable: true,
         allowFullscreen: true,
         content: `<iframe 
-                    src="entity_collab.html" 
+                    src="https://entity-collab.vercel.app/" 
                     style="width:100%; height:100%; border:0;"
                   ></iframe>`
     });
