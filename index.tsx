@@ -516,6 +516,19 @@ function openPsyBallzWindow() {
     });
 }
 
+function openSydraWindow() {
+    createWindow({
+        title: 'Sydra',
+        x: 150, y: 100, width: 900, height: 700,
+        resizable: true,
+        allowFullscreen: true,
+        content: `<iframe 
+                    src="https://sydra-byhq.vercel.app/" 
+                    style="width:100%; height:100%; border:0;"
+                  ></iframe>`
+    });
+}
+
 function openBandcampWindow() {
     window.open('https://environment-texture.bandcamp.com/', '_blank');
 }
@@ -538,6 +551,7 @@ const appDefinitions: AppDefinition[] = [
     { id: 'realism', name: 'Extractivist Realism', icon: '👁️‍🗨️', action: openExtractivistRealismWindow },
     { id: 'ravecat', name: 'Ravecat', icon: '🐈', action: openRavecatWindow },
     { id: 'psyballz', name: 'PsyBallz', icon: '🔮', action: openPsyBallzWindow },
+    { id: 'sydra', name: 'Sydra', icon: '🧬', action: openSydraWindow },
 ];
 
 
@@ -877,6 +891,7 @@ function render() {
         ['music', 'gallery', 'contact', 'trash'],
         ['datafall', 'paintdelic', 'ambient', 'entity'],
         ['wordarp', 'realism', 'ravecat', 'psyballz'],
+        ['sydra'],
     ];
 
     const iconMap: { [key: string]: AppDefinition } = {};
