@@ -1,4 +1,5 @@
 
+
 // --- State Management ---
 interface AppWindow {
     id: number;
@@ -108,13 +109,18 @@ function createWindow(options: Partial<AppWindow>) {
     };
 
     if (isMobile) {
-        const desktopHeight = desktopElement?.clientHeight ?? (window.innerHeight - 50);
-        newWindow.x = 10;
-        newWindow.y = 10;
-        newWindow.width = window.innerWidth - 25;
-        newWindow.height = desktopHeight - 20;
+        // Adjust for mobile top bar (40px) and bottom bar (25px)
+        const topBarHeight = 40; 
+        const bottomBarHeight = 25;
+        const desktopHeight = window.innerHeight - topBarHeight - bottomBarHeight;
+        
+        newWindow.x = 5;
+        newWindow.y = topBarHeight + 5;
+        newWindow.width = window.innerWidth - 12;
+        newWindow.height = desktopHeight - 10;
         newWindow.isDraggable = false;
         newWindow.resizable = false;
+        newWindow.allowFullscreen = false; // Usually forcing fullscreen on mobile
     }
 
     const windowEl = document.createElement('div');
@@ -295,8 +301,11 @@ function createDesktopIcon(name: string, visual: string, onClick: () => void, x:
     const iconEl = document.createElement('div');
     iconEl.className = 'desktop-icon';
     iconEl.setAttribute('tabindex', '0');
-    iconEl.style.left = `${x}px`;
-    iconEl.style.top = `${y}px`;
+    // Only set explicit coordinates for desktop mode
+    if (window.innerWidth >= 768) {
+        iconEl.style.left = `${x}px`;
+        iconEl.style.top = `${y}px`;
+    }
     iconEl.innerHTML = `
         <div class="icon-visual">${visual}</div>
         <div class="icon-label">${name}</div>
@@ -803,54 +812,92 @@ function render() {
             .desktop {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 15px;
-                padding: 15px;
-                justify-content: center;
+                gap: 20px;
+                padding: 20px;
+                justify-content: center; /* Center icons on mobile */
                 align-content: flex-start;
-                overflow-y: auto; /* Allow scrolling for many icons */
+                overflow-y: auto;
+                top: 40px; /* Adjust for larger top bar */
             }
 
             .desktop-icon {
                 position: relative !important; /* Override absolute positioning */
                 left: auto !important;
                 top: auto !important;
-                width: 70px; /* Slightly smaller icons */
+                width: 100px; /* Bigger touch target */
+                margin-bottom: 15px;
             }
             
             .desktop-icon .icon-visual {
-                width: 45px;
-                height: 45px;
-                font-size: 28px;
+                width: 65px;
+                height: 65px;
+                font-size: 40px; /* Larger icon */
+                box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
             }
             
             .desktop-icon .icon-label {
                 font-size: 14px;
+                margin-top: 5px;
+                background: rgba(255,255,255,0.9);
+                border: 1px solid #000;
+                padding: 2px 6px;
             }
 
+            /* Larger Top Bar for Touch */
             .top-bar {
-                height: 30px;
+                height: 40px;
             }
             .brand {
-                font-size: 16px;
+                font-size: 20px;
+                line-height: 40px;
             }
             .menu-item {
-                font-size: 14px;
-                padding: 2px 3px;
+                font-size: 18px;
+                padding: 0 10px;
+                line-height: 40px;
             }
             
             .bottom-bar {
-                height: 20px;
-            }
-            .scrolling-text-container span {
-                font-size: 14px;
+                height: 25px;
             }
 
             .resize-handle {
                 display: none !important;
             }
             
+            /* Larger Window Controls */
             .title-bar {
-                cursor: default;
+                height: 30px;
+                line-height: 30px;
+                font-size: 18px;
+            }
+            .close-btn {
+                width: 18px;
+                height: 18px;
+                top: 6px;
+                left: 6px;
+            }
+            .fullscreen-btn {
+                /* Fullscreen not needed on mobile usually, but keeping styling consistent if shown */
+                width: 18px;
+                height: 18px;
+                top: 6px;
+                left: 30px;
+            }
+            .fullscreen-btn::after {
+                top: 4px; left: 4px;
+                width: 8px; height: 8px;
+            }
+            
+            /* Adjust full screen windows for mobile */
+            .window.fullscreen {
+                top: 40px !important; /* Match top bar height */
+                height: calc(100vh - 65px) !important; /* top + bottom bars */
+            }
+            
+            /* Make windows fixed on mobile essentially */
+            .window:not(.fullscreen) {
+               /* Handled in createWindow, but CSS reinforcement */
             }
         }
     `;
