@@ -109,18 +109,18 @@ function createWindow(options: Partial<AppWindow>) {
     };
 
     if (isMobile) {
-        // Adjust for mobile top bar (40px) and bottom bar (25px)
-        const topBarHeight = 40; 
-        const bottomBarHeight = 25;
+        // Adjust for mobile top bar (50px) and bottom bar (30px)
+        const topBarHeight = 50; 
+        const bottomBarHeight = 30;
         const desktopHeight = window.innerHeight - topBarHeight - bottomBarHeight;
         
-        newWindow.x = 5;
-        newWindow.y = topBarHeight + 5;
-        newWindow.width = window.innerWidth - 12;
-        newWindow.height = desktopHeight - 10;
+        newWindow.x = 2; // Minimal margin
+        newWindow.y = topBarHeight + 2;
+        newWindow.width = window.innerWidth - 6; // Almost full width
+        newWindow.height = desktopHeight - 4; // Almost full height
         newWindow.isDraggable = false;
         newWindow.resizable = false;
-        newWindow.allowFullscreen = false; // Usually forcing fullscreen on mobile
+        newWindow.allowFullscreen = false; 
     }
 
     const windowEl = document.createElement('div');
@@ -807,97 +807,99 @@ function render() {
         }
         .window.fullscreen .resize-handle { display: none; }
         
-        /* --- Responsive Design for Mobile --- */
+        /* --- Responsive Design for Mobile (BIG & CLEAR) --- */
         @media (max-width: 768px) {
             .desktop {
-                display: flex;
-                flex-wrap: wrap;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Adaptive grid */
                 gap: 20px;
                 padding: 20px;
-                justify-content: center; /* Center icons on mobile */
-                align-content: flex-start;
+                align-content: start;
                 overflow-y: auto;
-                top: 40px; /* Adjust for larger top bar */
+                top: 50px; /* More space for larger top bar */
+                bottom: 30px;
             }
 
             .desktop-icon {
-                position: relative !important; /* Override absolute positioning */
+                position: relative !important;
                 left: auto !important;
                 top: auto !important;
-                width: 100px; /* Bigger touch target */
-                margin-bottom: 15px;
+                width: auto !important;
+                margin-bottom: 0;
             }
             
             .desktop-icon .icon-visual {
-                width: 65px;
-                height: 65px;
-                font-size: 40px; /* Larger icon */
-                box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+                width: 70px; /* Big Icons */
+                height: 70px;
+                font-size: 45px;
+                box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
             }
             
             .desktop-icon .icon-label {
-                font-size: 14px;
+                font-size: 16px; /* Larger readable text */
                 margin-top: 5px;
-                background: rgba(255,255,255,0.9);
+                background: rgba(255,255,255,0.95);
                 border: 1px solid #000;
-                padding: 2px 6px;
+                padding: 4px 8px;
+                font-weight: bold;
             }
 
-            /* Larger Top Bar for Touch */
+            /* Big Top Bar */
             .top-bar {
-                height: 40px;
+                height: 50px;
             }
             .brand {
-                font-size: 20px;
-                line-height: 40px;
+                font-size: 24px;
+                line-height: 50px;
             }
             .menu-item {
-                font-size: 18px;
-                padding: 0 10px;
-                line-height: 40px;
+                font-size: 20px;
+                padding: 0 15px;
+                line-height: 50px;
             }
             
             .bottom-bar {
-                height: 25px;
+                height: 30px;
+            }
+            .scrolling-text-container span {
+                font-size: 18px;
+                line-height: 30px;
             }
 
             .resize-handle {
                 display: none !important;
             }
             
-            /* Larger Window Controls */
+            /* Big Window Controls */
             .title-bar {
-                height: 30px;
-                line-height: 30px;
-                font-size: 18px;
+                height: 40px; /* Fat title bar for fingers */
+                line-height: 40px;
+                font-size: 20px;
             }
             .close-btn {
-                width: 18px;
-                height: 18px;
-                top: 6px;
-                left: 6px;
+                width: 26px; /* Huge close button */
+                height: 26px;
+                top: 7px;
+                left: 7px;
+                background-color: #ffcccc; /* Slight color hint */
             }
+            
+            /* Fullscreen button usually hidden or pushed right on mobile logic, but if visible: */
             .fullscreen-btn {
-                /* Fullscreen not needed on mobile usually, but keeping styling consistent if shown */
-                width: 18px;
-                height: 18px;
-                top: 6px;
-                left: 30px;
-            }
-            .fullscreen-btn::after {
-                top: 4px; left: 4px;
-                width: 8px; height: 8px;
+                display: none; 
             }
             
-            /* Adjust full screen windows for mobile */
-            .window.fullscreen {
-                top: 40px !important; /* Match top bar height */
-                height: calc(100vh - 65px) !important; /* top + bottom bars */
+            /* Windows fill space */
+            .window {
+                box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
             }
             
-            /* Make windows fixed on mobile essentially */
-            .window:not(.fullscreen) {
-               /* Handled in createWindow, but CSS reinforcement */
+            .dropdown-menu {
+                min-width: 160px;
+            }
+            .dropdown-item {
+                padding: 12px 16px; /* Big tap targets */
+                font-size: 20px;
             }
         }
     `;
