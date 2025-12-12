@@ -1,22 +1,20 @@
 
-
 // --- State Management ---
 interface AppWindow {
     id: number;
-    title?: string;
+    appId: string; // Link to the app definition
+    title: string;
     content: string | HTMLElement;
     x: number;
     y: number;
     width: number;
     height: number;
     zIndex: number;
-    hasTitleBar: boolean;
     isDraggable: boolean;
-    resizable?: boolean;
-    allowFullscreen?: boolean;
+    isMinimized: boolean;
+    isMaximized: boolean;
     element?: HTMLElement;
-    className?: string;
-    preFullscreenState?: { x: string; y: string; width: string; height: string };
+    preMaximizeState?: { x: string; y: string; width: string; height: string };
 }
 
 interface MusicAlbum {
@@ -29,968 +27,806 @@ interface AppDefinition {
     id: string;
     name: string;
     icon: string;
+    category: 'SYSTEM' | 'MEDIA' | 'TOOLS' | 'XENO';
     action: () => void;
 }
 
-
 let windows: AppWindow[] = [];
 let nextWindowId = 0;
-let highestZIndex = 10;
+let highestZIndex = 100;
 
 // --- Data ---
 const musicAlbums: MusicAlbum[] = [
     {
         title: 'Opalyn',
         artist: 'Faycle',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2788353006/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/opalyn">Opalyn by Faycle</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2788353006/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/opalyn">Opalyn by Faycle</a></iframe>`
     },
     {
         title: 'Kickgun & Dentalcore VOL2',
         artist: 'oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=105379128/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/kickgun-dentalcore-vol2">Kickgun &amp; Dentalcore VOL2 by oblinof</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=105379128/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/kickgun-dentalcore-vol2">Kickgun &amp; Dentalcore VOL2 by oblinof</a></iframe>`
     },
     {
         title: 'Graphical Interface Trance',
         artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2659704266/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/graphical-interface-trance">Graphical Interface Trance by Oblinof</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2659704266/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/graphical-interface-trance">Graphical Interface Trance by Oblinof</a></iframe>`
     },
     {
         title: 'edits, tools, & trash',
         artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2147918188/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/edits-tools-trash">edits, tools, &amp; trash by Oblinof</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2147918188/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/edits-tools-trash">edits, tools, &amp; trash by Oblinof</a></iframe>`
     },
     {
         title: 'Dogma',
         artist: 'Aloe Engine',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=193817841/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dogma">Dogma by Aloe Engine</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=193817841/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dogma">Dogma by Aloe Engine</a></iframe>`
     },
     {
         title: ',-Dr3ja',
         artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=541149304/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dr3ja">,-Dr3ja by Oblinof</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=541149304/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dr3ja">,-Dr3ja by Oblinof</a></iframe>`
     },
     {
         title: '842',
         artist: 'Aural Eq',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=1723178745/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/842">842 by Aural Eq</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=1723178745/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/842">842 by Aural Eq</a></iframe>`
     },
     {
         title: 'Wifi Pineal',
         artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=3419546872/size=large/bgcol=ffffff/linkcol=0687f5/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/wifi-pineal">Wifi Pineal by Oblinof</a></iframe>`
+        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=3419546872/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/wifi-pineal">Wifi Pineal by Oblinof</a></iframe>`
     }
 ];
 
 // --- DOM Elements ---
 const root = document.getElementById('root')!;
-let desktopElement: HTMLElement | null = null;
+let windowsContainer: HTMLElement | null = null;
 
 
 // --- Core Functions ---
 
-function createWindow(options: Partial<AppWindow>) {
+function isMobileDevice() {
+    return window.innerWidth < 800;
+}
+
+function createWindow(appId: string, title: string, content: string | HTMLElement, width = 800, height = 600) {
+    // Check if window exists and is just minimized
+    const existingWin = windows.find(w => w.appId === appId);
+    if (existingWin) {
+        restoreWindow(existingWin);
+        return;
+    }
+
     highestZIndex++;
-    const isMobile = window.innerWidth < 768;
+    
+    // Smart Positioning
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    
+    // Arcade style: Center-Left biased
+    let startX = 20;
+    let startY = 100;
+    
+    if (isMobileDevice()) {
+        width = viewportW;
+        height = viewportH - 80; // Leave space for header
+        startX = 0;
+        startY = 80;
+    } else {
+        // Clamp to screen, avoid the right sidebar area (approx 300px)
+        const availableW = viewportW - 320;
+        if (width > availableW) width = availableW - 20;
+        if (height > viewportH - 120) height = viewportH - 120;
+        
+        startX = (availableW - width) / 2;
+        startY = (viewportH - height) / 2 + 30;
+    }
 
     const newWindow: AppWindow = {
         id: nextWindowId++,
-        title: 'Untitled',
-        content: '',
-        x: 50,
-        y: 50,
-        width: 400,
-        height: 200,
+        appId: appId,
+        title: title,
+        content: content,
+        x: startX,
+        y: startY,
+        width: width,
+        height: height,
         zIndex: highestZIndex,
-        hasTitleBar: true,
-        isDraggable: true,
-        resizable: false,
-        allowFullscreen: false,
-        ...options,
+        isDraggable: !isMobileDevice(),
+        isMinimized: false,
+        isMaximized: isMobileDevice(), 
     };
 
-    if (isMobile) {
-        // Adjust for mobile top bar (50px) and bottom bar (30px)
-        const topBarHeight = 50; 
-        const bottomBarHeight = 30;
-        const desktopHeight = window.innerHeight - topBarHeight - bottomBarHeight;
-        
-        newWindow.x = 2; // Minimal margin
-        newWindow.y = topBarHeight + 2;
-        newWindow.width = window.innerWidth - 6; // Almost full width
-        newWindow.height = desktopHeight - 4; // Almost full height
-        newWindow.isDraggable = false;
-        newWindow.resizable = false;
-        newWindow.allowFullscreen = false; 
-    }
-
-    const windowEl = document.createElement('div');
-    windowEl.className = `window ${newWindow.className || ''}`;
-    windowEl.style.left = `${newWindow.x}px`;
-    windowEl.style.top = `${newWindow.y}px`;
-    windowEl.style.width = `${newWindow.width}px`;
-    windowEl.style.height = `${newWindow.height}px`;
-    windowEl.style.zIndex = `${newWindow.zIndex}`;
-
-    let titleBarHTML = '';
-    if (newWindow.hasTitleBar) {
-         const fullscreenBtnHTML = newWindow.allowFullscreen ? `<div class="fullscreen-btn" aria-label="Toggle Fullscreen"></div>` : '';
-        titleBarHTML = `
-        <div class="title-bar">
-            <div class="close-btn" aria-label="Close"></div>
-            ${fullscreenBtnHTML}
-            <span class="title-text">${newWindow.title}</span>
-        </div>`;
-    }
-
-    windowEl.innerHTML = `
-        ${titleBarHTML}
-        <div class="window-content"></div>
-    `;
-    
-    const contentEl = windowEl.querySelector('.window-content') as HTMLElement;
-    if (typeof newWindow.content === 'string') {
-        contentEl.innerHTML = newWindow.content;
-    } else {
-        contentEl.appendChild(newWindow.content);
-    }
-
-    newWindow.element = windowEl;
+    renderWindowElement(newWindow);
     windows.push(newWindow);
-    desktopElement?.appendChild(windowEl);
+    updateTaskbarActiveState();
+}
+
+function renderWindowElement(win: AppWindow) {
+    const windowEl = document.createElement('div');
+    windowEl.id = `window-${win.id}`;
+    windowEl.className = `arcade-window ${win.isMaximized ? 'maximized' : ''}`;
+    windowEl.style.zIndex = `${win.zIndex}`;
     
-    const closeBtn = windowEl.querySelector('.close-btn');
+    // Initial Styles
+    if (!win.isMaximized) {
+        windowEl.style.width = `${win.width}px`;
+        windowEl.style.height = `${win.height}px`;
+        windowEl.style.transform = `translate(${win.x}px, ${win.y}px)`;
+    }
+
+    // Header / Controls (Arcade Style)
+    const headerHTML = `
+        <div class="window-header">
+            <div class="header-pill">STAGE: ${win.title}</div>
+            <div class="window-controls">
+                <button class="ctrl-btn minimize-btn">_</button>
+                <button class="ctrl-btn maximize-btn">[]</button>
+                <button class="ctrl-btn close-btn">X</button>
+            </div>
+        </div>
+        <div class="window-decor-bar"></div>
+    `;
+
+    windowEl.innerHTML = headerHTML;
+
+    // Content
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'window-body custom-scrollbar';
+    
+    if (typeof win.content === 'string') {
+        contentContainer.innerHTML = win.content;
+    } else {
+        contentContainer.appendChild(win.content);
+    }
+    windowEl.appendChild(contentContainer);
+    
+    // Append to DOM
+    if (!windowsContainer) {
+        windowsContainer = document.createElement('div');
+        windowsContainer.className = 'windows-layer';
+        root.appendChild(windowsContainer);
+    }
+    windowsContainer.appendChild(windowEl);
+    win.element = windowEl;
+
+    // Event Listeners
+    setupWindowEvents(win, windowEl);
+}
+
+function setupWindowEvents(win: AppWindow, el: HTMLElement) {
+    const closeBtn = el.querySelector('.close-btn');
+    const minBtn = el.querySelector('.minimize-btn');
+    const maxBtn = el.querySelector('.maximize-btn');
+    const header = el.querySelector('.window-header') as HTMLElement;
+
     closeBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
-        windowEl.remove();
-        windows = windows.filter(w => w.id !== newWindow.id);
+        closeWindow(win);
     });
-    
-    const fullscreenBtn = windowEl.querySelector('.fullscreen-btn');
-    fullscreenBtn?.addEventListener('click', (e) => {
+
+    minBtn?.addEventListener('click', (e) => {
         e.stopPropagation();
-        toggleFullscreen(newWindow);
+        minimizeWindow(win);
     });
 
-    if (newWindow.isDraggable) {
-        makeDraggable(windowEl, newWindow);
-    }
-     if (newWindow.resizable) {
-        makeResizable(windowEl, newWindow);
-    }
-    
-    windowEl.addEventListener('mousedown', () => {
-        focusWindow(newWindow.id);
+    maxBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMaximize(win);
     });
 
-    return newWindow;
-}
+    el.addEventListener('mousedown', () => {
+        bringToFront(win);
+    });
 
-function toggleFullscreen(win: AppWindow) {
-    if (!win.element) return;
-    const isFullscreen = win.element.classList.contains('fullscreen');
+    // Dragging Logic
+    if (win.isDraggable) {
+        header.addEventListener('mousedown', (e) => {
+            if (win.isMaximized) return; 
+            e.preventDefault();
+            bringToFront(win);
+            
+            let shiftX = e.clientX - win.x;
+            let shiftY = e.clientY - win.y;
 
-    if (isFullscreen) {
-        win.element.classList.remove('fullscreen');
-        if (win.preFullscreenState) {
-            win.element.style.left = win.preFullscreenState.x;
-            win.element.style.top = win.preFullscreenState.y;
-            win.element.style.width = win.preFullscreenState.width;
-            win.element.style.height = win.preFullscreenState.height;
-        }
-    } else {
-        win.preFullscreenState = {
-            x: win.element.style.left,
-            y: win.element.style.top,
-            width: win.element.style.width,
-            height: win.element.style.height,
-        };
-        win.element.classList.add('fullscreen');
+            const onMouseMove = (ev: MouseEvent) => {
+                win.x = ev.clientX - shiftX;
+                win.y = ev.clientY - shiftY;
+                el.style.transform = `translate(${win.x}px, ${win.y}px)`;
+            };
+
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
     }
 }
 
-
-function focusWindow(id: number) {
-    const win = windows.find(w => w.id === id);
-    if (win && win.zIndex < highestZIndex) {
+function bringToFront(win: AppWindow) {
+    if (win.zIndex < highestZIndex) {
         highestZIndex++;
         win.zIndex = highestZIndex;
-        if(win.element) {
-            win.element.style.zIndex = `${win.zIndex}`;
-        }
+        if (win.element) win.element.style.zIndex = `${highestZIndex}`;
     }
 }
 
-function makeDraggable(element: HTMLElement, windowState: AppWindow) {
-    const titleBar = element.querySelector<HTMLElement>('.title-bar');
-    if (!titleBar || !windowState.isDraggable) return;
-
-    let offsetX = 0, offsetY = 0;
-
-    const onMouseDown = (e: MouseEvent) => {
-        if (element.classList.contains('fullscreen')) return;
-
-        const target = e.target as HTMLElement;
-        if (target.classList.contains('close-btn') || target.classList.contains('fullscreen-btn')) {
-            return;
-        }
-        
-        e.preventDefault();
-        focusWindow(windowState.id);
-        
-        offsetX = e.clientX - element.offsetLeft;
-        offsetY = e.clientY - element.offsetTop;
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-        let newX = e.clientX - offsetX;
-        let newY = e.clientY - offsetY;
-
-        element.style.left = `${newX}px`;
-        element.style.top = `${newY}px`;
-    };
-
-    const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    titleBar.addEventListener('mousedown', onMouseDown);
-}
-
-function makeResizable(element: HTMLElement, windowState: AppWindow) {
-    const resizeHandle = document.createElement('div');
-    resizeHandle.className = 'resize-handle';
-    element.appendChild(resizeHandle);
-
-    let startX = 0, startY = 0;
-    let startWidth = 0, startHeight = 0;
-
-    const onMouseDown = (e: MouseEvent) => {
-        if (element.classList.contains('fullscreen')) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        startX = e.clientX;
-        startY = e.clientY;
-        startWidth = parseInt(document.defaultView!.getComputedStyle(element).width, 10);
-        startHeight = parseInt(document.defaultView!.getComputedStyle(element).height, 10);
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-        const newWidth = startWidth + (e.clientX - startX);
-        const newHeight = startHeight + (e.clientY - startY);
-        element.style.width = `${Math.max(200, newWidth)}px`;
-        element.style.height = `${Math.max(150, newHeight)}px`;
-    };
-
-    const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    resizeHandle.addEventListener('mousedown', onMouseDown);
-}
-
-function createDesktopIcon(name: string, visual: string, onClick: () => void, x: number, y: number) {
-    const iconEl = document.createElement('div');
-    iconEl.className = 'desktop-icon';
-    iconEl.setAttribute('tabindex', '0');
-    // Only set explicit coordinates for desktop mode
-    if (window.innerWidth >= 768) {
-        iconEl.style.left = `${x}px`;
-        iconEl.style.top = `${y}px`;
+function closeWindow(win: AppWindow) {
+    if (win.element) {
+        win.element.classList.add('closing');
+        setTimeout(() => {
+            win.element?.remove();
+            windows = windows.filter(w => w.id !== win.id);
+            updateTaskbarActiveState();
+        }, 200);
     }
-    iconEl.innerHTML = `
-        <div class="icon-visual">${visual}</div>
-        <div class="icon-label">${name}</div>
+}
+
+function minimizeWindow(win: AppWindow) {
+    win.isMinimized = true;
+    if (win.element) {
+        win.element.style.display = 'none';
+    }
+    updateTaskbarActiveState();
+}
+
+function restoreWindow(win: AppWindow) {
+    win.isMinimized = false;
+    if (win.element) {
+        win.element.style.display = 'flex';
+        bringToFront(win);
+        win.element.classList.remove('minimizing');
+        win.element.classList.add('restoring');
+        setTimeout(() => win.element?.classList.remove('restoring'), 200);
+    }
+    updateTaskbarActiveState();
+}
+
+function toggleMaximize(win: AppWindow) {
+    if (!win.element) return;
+    
+    if (win.isMaximized) {
+        // Restore
+        win.isMaximized = false;
+        win.element.classList.remove('maximized');
+        win.element.style.width = `${win.width}px`;
+        window.setTimeout(() => {
+             if(win.element) win.element.style.transform = `translate(${win.x}px, ${win.y}px)`;
+        }, 10);
+       
+    } else {
+        // Maximize
+        win.preMaximizeState = {
+            x: win.element.style.transform,
+            y: win.element.style.top,
+            width: win.element.style.width,
+            height: win.element.style.height
+        };
+        win.isMaximized = true;
+        win.element.classList.add('maximized');
+        win.element.style.transform = 'none';
+        win.element.style.width = '100%';
+        win.element.style.height = '100%';
+    }
+}
+
+
+// --- App Content Generators ---
+
+function openMusicWindow() {
+    const container = document.createElement('div');
+    container.className = 'arcade-grid';
+    
+    // DJ Mix Item
+    const djItem = document.createElement('div');
+    djItem.className = 'arcade-item special-item';
+    djItem.innerHTML = `
+        <div class="item-badge">HOT</div>
+        <div class="item-info">
+            <div class="item-title">DJ OBLI</div>
+            <div class="item-sub">Liminal Mixes</div>
+        </div>
     `;
-    
-    iconEl.addEventListener('click', onClick);
-    
-    desktopElement?.appendChild(iconEl);
-}
+    djItem.onclick = () => createWindow('dj_obli', 'DJ OBLI // MIXES', `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%2300ffff&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`);
+    container.appendChild(djItem);
 
-// --- App Windows ---
+    // Albums
+    musicAlbums.forEach((album, idx) => {
+        const item = document.createElement('div');
+        item.className = 'arcade-item';
+        item.innerHTML = `
+            <div class="item-badge">CD</div>
+            <div class="item-info">
+                <div class="item-title">${album.title}</div>
+                <div class="item-sub">${album.artist}</div>
+            </div>
+        `;
+        item.onclick = () => createWindow(`album_${idx}`, `AUDIO: ${album.title}`, album.iframe, 400, 500);
+        container.appendChild(item);
+    });
+
+    createWindow('music', 'SELECT MUSIC', container);
+}
 
 function openGalleryWindow() {
-    createWindow({
-        title: 'Gallery',
-        x: 100, y: 50, width: 800, height: 600,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://artviewer.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
+    createWindow('gallery', 'VISUAL MODE', `<iframe src="https://artviewer.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`);
 }
 
 function openContactWindow() {
-     createWindow({
-        title: 'About',
-        x: 250, y: 150, width: 400, height: 320,
-        content: `
-            <div class="text-content" style="text-align: center;">
-                <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
-                <p style="margin: 15px 0;">I’ve been crafting audiovisual experiences since 2007. This is my gallery + workshop - selected A&V pieces and a brand-new tools to metamodel your perception and create more art for all of us. WIP.</p>
-                <p> ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉ ▂▃▄▅▆▇▉</p>
-                <ul class="contact-list" style="margin-top: 20px;">
-                    <li>Email: oblinof@gmail.com</li>
-                    <li>Socials: <a href="https://linktr.ee/oblinof" target="_blank" rel="noopener noreferrer">linktr.ee/oblinof</a></li>
-                </ul>
+    createWindow('contact', 'PLAYER INFO', `
+        <div class="profile-layout">
+            <div class="profile-card">
+                <h2 style="font-size: 32px; color: #ffcc00; font-style: italic;">OBLINOF</h2>
+                <div style="background: #000; padding: 10px; border: 2px solid #00ffff; margin: 10px 0;">
+                    <p>CLASS: MULTIMEDIA ARTIST</p>
+                    <p>RANK: SSS</p>
+                    <p>LOCATION: GRID_NODE_07</p>
+                </div>
+                <p>>> Crafting audiovisual experiences since [2007].</p>
+                <div class="link-box">
+                    <a href="mailto:oblinof@gmail.com" target="_blank">EMAIL TRANSMISSION</a>
+                    <a href="https://linktr.ee/oblinof" target="_blank">NEURAL LINKTREE</a>
+                </div>
             </div>
-        `
-    });
-}
-
-function openAlbumPlayerWindow(album: MusicAlbum) {
-    createWindow({
-        title: album.title,
-        x: Math.random() * 200 + 100,
-        y: Math.random() * 150 + 120,
-        width: 370,
-        height: 500,
-        resizable: true,
-        content: album.iframe
-    });
-}
-
-function openDjObliWindow() {
-    const soundcloudIframe = `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%23000000&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`;
-
-    createWindow({
-        title: 'DJ OBLI - Liminal Mixes',
-        x: Math.random() * 200 + 150,
-        y: Math.random() * 150 + 100,
-        width: 450,
-        height: 450,
-        resizable: true,
-        content: soundcloudIframe
-    });
-}
-
-function openMusicWindow() {
-    const folderContent = document.createElement('div');
-    folderContent.className = 'folder-grid';
-    
-    musicAlbums.forEach(album => {
-        const iconEl = document.createElement('div');
-        iconEl.className = 'folder-icon';
-        iconEl.setAttribute('tabindex', '0');
-        iconEl.innerHTML = `
-            <div class="icon-visual">💽</div>
-            <div class="icon-label">${album.title}</div>
-            <div class="icon-sublabel">${album.artist}</div>
-        `;
-        iconEl.addEventListener('dblclick', () => openAlbumPlayerWindow(album));
-        iconEl.addEventListener('click', () => iconEl.focus());
-        folderContent.appendChild(iconEl);
-    });
-
-    // Add DJ OBLI Icon
-    const djIconEl = document.createElement('div');
-    djIconEl.className = 'folder-icon';
-    djIconEl.setAttribute('tabindex', '0');
-    djIconEl.innerHTML = `
-        <div class="icon-visual">🎧</div>
-        <div class="icon-label">DJ OBLI</div>
-        <div class="icon-sublabel">Liminal Mixes</div>
-    `;
-    djIconEl.addEventListener('dblclick', () => openDjObliWindow());
-    djIconEl.addEventListener('click', () => djIconEl.focus());
-    folderContent.appendChild(djIconEl);
-
-    createWindow({
-        title: 'Music',
-        x: 100, y: 120, width: 450, height: 350,
-        content: folderContent
-    });
+        </div>
+    `, 500, 450);
 }
 
 function openTrashWindow() {
-     createWindow({
-        title: 'Trash',
-        x: 300, y: 200, width: 200, height: 120,
-        content: `<div class="text-content"><p style="text-align:center; padding-top: 10px;">Trash is empty.</p></div>`
-    });
-}
-
-function openDatafallWindow() {
-    createWindow({
-        title: 'Datafall',
-        x: 150, y: 30, width: 700, height: 500,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://datafall.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openPaintdelicWindow() {
-    createWindow({
-        title: 'Paintdelic',
-        x: 180, y: 50, width: 800, height: 600,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://paintedelic.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openAmbientPortableWindow() {
-    createWindow({
-        title: 'Ambient Portable',
-        x: 200, y: 70, width: 500, height: 650,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://conversation-rope-497.app.ohara.ai" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openEntityCollabWindow() {
-    createWindow({
-        title: 'Entity Collab',
-        x: 220, y: 80, width: 640, height: 480,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://entity-collab.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openWordArpWindow() {
-    createWindow({
-        title: 'Word Arp',
-        x: 250, y: 100, width: 900, height: 600,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://wordarp.vercel.app/" 
-                    style="width:100%; height:100%; border:0;" 
-                  ></iframe>`
-    });
-}
-
-function openExtractivistRealismWindow() {
-    createWindow({
-        title: 'Extractivist Realism 1.0',
-        x: 180, y: 60, width: 800, height: 600,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://extractivist-realism.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openRavecatWindow() {
-    createWindow({
-        title: 'Ravecat',
-        x: 160, y: 40, width: 900, height: 700,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://ravecat-beta.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openPsyBallzWindow() {
-    createWindow({
-        title: 'PsyBallz',
-        x: 200, y: 80, width: 900, height: 700,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://psyballs.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openSydraWindow() {
-    createWindow({
-        title: 'Sydra',
-        x: 150, y: 100, width: 900, height: 700,
-        resizable: true,
-        allowFullscreen: true,
-        content: `<iframe 
-                    src="https://sydra-byhq.vercel.app/" 
-                    style="width:100%; height:100%; border:0;"
-                  ></iframe>`
-    });
-}
-
-function openBandcampWindow() {
-    window.open('https://environment-texture.bandcamp.com/', '_blank');
-}
-
-function openSoundcloudWindow() {
-    window.open('https://soundcloud.com/oblinof', '_blank');
+    createWindow('trash', 'RECYCLE', `<div class="empty-state">NO GARBAGE DATA FOUND</div>`, 300, 200);
 }
 
 
-const appDefinitions: AppDefinition[] = [
-    { id: 'music', name: 'Music', icon: '♫', action: openMusicWindow },
-    { id: 'gallery', name: 'Gallery', icon: '🖼️', action: openGalleryWindow },
-    { id: 'contact', name: 'Contact', icon: '✉️', action: openContactWindow },
-    { id: 'trash', name: 'Trash', icon: '🗑️', action: openTrashWindow },
-    { id: 'datafall', name: 'Datafall', icon: '💧', action: openDatafallWindow },
-    { id: 'paintdelic', name: 'Paintdelic', icon: '🎨', action: openPaintdelicWindow },
-    { id: 'ambient', name: 'Ambient Portable', icon: '🔊', action: openAmbientPortableWindow },
-    { id: 'entity', name: 'Entity Collab', icon: '👾', action: openEntityCollabWindow },
-    { id: 'wordarp', name: 'Word Arp', icon: '🎹', action: openWordArpWindow },
-    { id: 'realism', name: 'Extractivist Realism', icon: '👁️‍🗨️', action: openExtractivistRealismWindow },
-    { id: 'ravecat', name: 'Ravecat', icon: '🐈', action: openRavecatWindow },
-    { id: 'psyballz', name: 'PsyBallz', icon: '🔮', action: openPsyBallzWindow },
-    { id: 'sydra', name: 'Sydra', icon: '🧬', action: openSydraWindow },
+// --- App Configuration ---
+
+const apps: AppDefinition[] = [
+    { id: 'music', name: 'Music Select', icon: '♫', category: 'MEDIA', action: openMusicWindow },
+    { id: 'gallery', name: 'Visual Gallery', icon: '🖼', category: 'MEDIA', action: openGalleryWindow },
+    { id: 'contact', name: 'Player Info', icon: '✉', category: 'SYSTEM', action: openContactWindow },
+    { id: 'trash', name: 'Recycle Bin', icon: '🗑', category: 'SYSTEM', action: openTrashWindow },
+    
+    { id: 'datafall', name: 'Datafall', icon: '💧', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'paintdelic', name: 'Paintdelic', icon: '🎨', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ambient', name: 'Ambient', icon: '🔊', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'entity', name: 'Entity', icon: '👾', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'wordarp', name: 'WordArp', icon: '🎹', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    
+    { id: 'realism', name: 'Realism', icon: '👁', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ravecat', name: 'Ravecat', icon: '🐈', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'psyballz', name: 'PsyBallz', icon: '🔮', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'sydra', name: 'Sydra', icon: '🧬', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
 ];
 
+function updateTaskbarActiveState() {
+    apps.forEach(app => {
+        const btn = document.getElementById(`track-btn-${app.id}`);
+        if (btn) {
+            const isOpen = windows.some(w => w.appId === app.id);
+            if (isOpen) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+    });
+}
 
-// --- UI Rendering ---
+// --- Render ---
+
 function render() {
+    // 1. CSS Styles
     const style = document.createElement('style');
     style.textContent = `
-        @keyframes subtle-move {
-            from { background-position: 0 0; }
-            to { background-position: 2px 2px; }
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --arcade-yellow: #ffcc00;
+            --arcade-cyan: #00ffff;
+            --arcade-pink: #ff00cc;
+            --arcade-dark: #000b1e;
+            --arcade-grid: #002244;
+            --font-arcade: 'Share Tech Mono', sans-serif;
         }
-        @keyframes scroll-text {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-        }
-        :root { --font-family: 'VT323', monospace; }
-        html, body {
-            margin: 0; padding: 0; 
-            height: 100%;
-            overflow: hidden;
-        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: var(--font-family); color: #000;
-            background-color: #ccc;
-            background-image: repeating-conic-gradient(#aaa 0% 25%, #ccc 0% 50%);
-            background-size: 2px 2px; image-rendering: pixelated;
-            animation: subtle-move 2s linear infinite;
-            -webkit-font-smoothing: none; font-smooth: never; cursor: default;
+            margin: 0; padding: 0;
+            background-color: var(--arcade-dark);
+            color: #fff;
+            font-family: var(--font-arcade);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            /* Global Slant for speed */
         }
-        #root { width: 100vw; height: 100vh; position: relative; }
-        
-        .top-bar {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 25px;
-            background: #fff;
-            border-bottom: 1px solid #000;
-            box-shadow: 2px 2px 0px #000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 10px;
-            z-index: 10000;
-            user-select: none;
-        }
-        .brand { font-weight: bold; font-size: 18px; }
-        .menu { display: flex; gap: 15px; }
-        .menu-item {
-            cursor: pointer;
-            font-size: 16px;
+
+        /* --- BACKGROUND --- */
+        #root {
             position: relative;
-            padding: 2px 5px;
-        }
-        .menu-item:hover {
-            background: #000;
-            color: #fff;
-        }
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: #fff;
-            border: 1px solid #000;
-            box-shadow: 2px 2px 0px #000;
-            min-width: 120px;
-            z-index: 10001;
-        }
-        .dropdown-item {
-            padding: 5px 10px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .dropdown-item:hover {
-            background: #000;
-            color: #fff;
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 50% 50%, transparent 20%, var(--arcade-dark) 80%),
+                radial-gradient(circle, var(--arcade-grid) 2px, transparent 2.5px);
+            background-size: 100% 100%, 20px 20px;
+            animation: scrollBg 20s linear infinite;
         }
         
-        .desktop { position: absolute; top: 25px; left: 0; right: 0; bottom: 25px; }
-        
-        .bottom-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 25px;
-            background: #000;
-            color: #fff;
-            z-index: 10000;
-            user-select: none;
+        @keyframes scrollBg {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 0 0, 40px 40px; }
+        }
+
+        /* --- MAIN LAYOUT --- */
+        .arcade-layout {
             display: flex;
+            height: 100%;
+            width: 100%;
+            flex-direction: column;
         }
-        .marquee {
+
+        /* --- TOP BANNER (Select Music Style) --- */
+        .arcade-header {
+            height: 70px;
+            background: linear-gradient(90deg, var(--arcade-yellow), #cc9900);
+            border-bottom: 4px solid #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.5);
+            z-index: 2000;
+            clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 0 100%);
+        }
+
+        .header-title {
+            font-size: 32px;
+            color: #000;
+            font-weight: 900;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            text-shadow: 2px 2px 0px #fff;
+            padding-right: 20px;
+        }
+        
+        .bpm-display {
+            background: #000;
+            color: var(--arcade-pink);
+            font-size: 24px;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 2px solid #fff;
+            font-style: italic;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        /* --- WORKSPACE (Split) --- */
+        .workspace {
+            display: flex;
             flex-grow: 1;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-        }
-        .scrolling-text-container {
-            display: flex;
-            width: max-content;
-            animation: scroll-text 40s linear infinite;
-        }
-        .scrolling-text-container span {
-            white-space: nowrap;
-            font-size: 16px;
+            position: relative;
         }
 
-        .window {
-            position: absolute; background: #fff; border: 1px solid #000;
-            box-shadow: 2px 2px 0px #000; display: flex; flex-direction: column;
-        }
-        .title-bar {
-            height: 19px; padding: 0 5px; border-bottom: 1px solid #000;
-            background-image: repeating-linear-gradient(to bottom, #fff, #fff 1px, transparent 1px, transparent 3px);
-            background-color: #fff; cursor: move; user-select: none;
-            text-align: center; font-size: 16px; line-height: 19px; position: relative;
-        }
-        .title-text { pointer-events: none; }
-        .close-btn {
-            position: absolute; top: 4px; left: 4px; width: 11px; height: 11px;
-            border: 1px solid #000; cursor: pointer;
-        }
-        .close-btn:active { background: #000; }
-        
-        .fullscreen-btn {
-            position: absolute; top: 4px; left: 20px; width: 11px; height: 11px;
-            border: 1px solid #000; cursor: pointer;
-        }
-        .fullscreen-btn::after {
-            content: ''; position: absolute; top: 2px; left: 2px;
-            width: 5px; height: 5px; border: 1px solid #000;
-        }
-        .fullscreen-btn:active { background: #000; }
-
-        .window.fullscreen .fullscreen-btn::after {
-            top: 1px; left: 1px; width: 7px; height: 7px; border: none;
-            border-left: 2px solid #000; border-top: 2px solid #000;
-            transform: rotate(225deg);
-        }
-        .window.fullscreen .fullscreen-btn:active::after {
-             border-left: 2px solid #fff; border-top: 2px solid #fff;
-        }
-
-
-        .window-content { padding: 2px; flex-grow: 1; overflow: auto; }
-        .window-content iframe { border: none; background-color: #1a1a1a; }
-        
-        .desktop-icon {
-            position: absolute; width: 80px; display: flex; flex-direction: column;
-            align-items: center; text-align: center; user-select: none; padding: 4px; cursor: pointer;
-            transition: transform 0.1s ease-out;
-        }
-        .desktop-icon:hover {
-            transform: translateY(-2px);
-        }
-        .desktop-icon:focus { outline: none; }
-        .desktop-icon .icon-visual {
-            width: 50px; height: 50px; border: 1px solid black; background: #fff;
-            font-size: 32px; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 4px; font-family: monospace;
-        }
-        .desktop-icon .icon-label { background: #fff; padding: 0 4px; font-size: 16px; }
-        .desktop-icon:focus .icon-label, .desktop-icon:hover .icon-label { 
-            background: #000; color: #fff; 
-        }
-        .desktop-icon:active .icon-visual { filter: invert(1); }
-
-        .text-content { padding: 10px; font-size: 16px; line-height: 1.4; }
-
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 15px; padding: 10px; height: 100%; box-sizing: border-box;
-        }
-        .gallery-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .img-placeholder {
-            width: 120px; height: 90px;
-            background: repeating-conic-gradient(#bbb 0% 25%, #ddd 0% 50%);
-            background-size: 4px 4px; border: 1px solid #000; margin-bottom: 4px;
-        }
-
-        .contact-list { list-style: none; padding: 15px; margin: 0; font-size: 16px; }
-        .contact-list li { padding: 5px 0; }
-        .contact-list a { color: #0000ff; text-decoration: underline; }
-        .contact-list a:hover { color: #ff00ff; }
-
-
-        .resize-handle {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 12px;
-            height: 12px;
-            cursor: se-resize;
-            z-index: 1;
-        }
-        .resize-handle::after {
-            content: '';
-            position: absolute;
-            bottom: 1px;
-            right: 1px;
-            width: 5px;
-            height: 5px;
-            border-bottom: 1px solid #000;
-            border-right: 1px solid #000;
-        }
-        
-        .folder-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 10px;
-        }
-        .folder-icon {
-            width: 90px;
+        /* --- RIGHT TRACKLIST (Sidebar) --- */
+        .tracklist-panel {
+            width: 300px;
+            background: rgba(0,0,0,0.8);
+            border-left: 2px solid var(--arcade-cyan);
             display: flex;
             flex-direction: column;
+            padding: 20px 0;
+            overflow-y: auto;
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .tracklist-panel::-webkit-scrollbar { width: 0px; }
+
+        .category-header {
+            color: var(--arcade-cyan);
+            font-size: 14px;
+            font-style: italic;
+            text-align: right;
+            padding-right: 20px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px var(--arcade-cyan);
+            border-bottom: 1px solid var(--arcade-cyan);
+        }
+
+        .track-btn {
+            height: 50px;
+            margin-bottom: 8px;
+            display: flex;
             align-items: center;
+            justify-content: flex-end; /* Align right */
+            padding-right: 20px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            position: relative;
+            
+            /* The pill shape background */
+            background: linear-gradient(90deg, transparent 0%, #000 20%, #222 100%);
+            border-radius: 25px 0 0 25px; /* Round left side */
+            border-right: 5px solid #444;
+        }
+
+        .track-btn:hover {
+            transform: translateX(-10px);
+            background: linear-gradient(90deg, transparent 0%, #000 20%, #333 100%);
+            border-right-color: var(--arcade-yellow);
+        }
+
+        .track-btn.active {
+            transform: translateX(-15px);
+            border-right: 5px solid var(--arcade-cyan);
+            background: linear-gradient(90deg, transparent 0%, #001122 20%, #003344 100%);
+        }
+        
+        .track-btn.active .track-name {
+            color: var(--arcade-cyan);
+            text-shadow: 0 0 5px var(--arcade-cyan);
+        }
+
+        .track-name {
+            font-size: 18px;
+            font-weight: bold;
+            font-style: italic;
+            color: #fff;
+            text-transform: uppercase;
+        }
+        
+        .track-icon {
+            margin-left: 10px;
+            font-size: 20px;
+            width: 30px;
             text-align: center;
+            color: var(--arcade-yellow);
+        }
+        
+        .no-data {
+            background: #555;
+            color: #000;
+            font-size: 10px;
+            padding: 2px 4px;
+            margin-left: 10px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+
+        /* --- WINDOWS --- */
+        .arcade-window {
+            position: absolute;
+            background: rgba(0, 10, 30, 0.95);
+            border: 3px solid var(--arcade-cyan);
+            border-radius: 20px 0 20px 0; /* Arcade styling */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), 5px 5px 0px rgba(0,0,0,0.5);
+            transition: opacity 0.2s;
+            overflow: hidden;
+        }
+
+        .arcade-window.maximized {
+            top: 0 !important; left: 0 !important;
+            width: 100% !important; height: 100% !important;
+            transform: none !important;
+            border-radius: 0;
+            z-index: 5000 !important;
+        }
+
+        .window-header {
+            height: 40px;
+            background: linear-gradient(90deg, var(--arcade-cyan), #009999);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
             user-select: none;
-            padding: 4px;
+        }
+
+        .header-pill {
+            background: #000;
+            color: #fff;
+            padding: 2px 15px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            font-style: italic;
+            border: 1px solid #fff;
+        }
+
+        .window-controls { display: flex; gap: 5px; }
+        
+        .ctrl-btn {
+            width: 25px; height: 25px;
+            background: #000;
+            border: 2px solid #fff;
+            color: #fff;
+            font-weight: bold;
+            border-radius: 50%;
             cursor: pointer;
         }
-        .folder-icon:focus { outline: none; }
-        .folder-icon .icon-visual {
-            width: 50px; height: 50px;
-            font-size: 32px; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 4px;
-        }
-        .folder-icon .icon-label { background: #fff; padding: 0 4px; font-size: 14px; word-break: break-word; }
-        .folder-icon .icon-sublabel { font-size: 12px; color: #555; }
-        .folder-icon:focus .icon-label, .folder-icon:hover .icon-label {
-            background: #000; color: #fff;
+        .ctrl-btn:hover { background: #fff; color: #000; }
+        .close-btn:hover { background: var(--arcade-pink); border-color: var(--arcade-pink); }
+
+        .window-decor-bar {
+            height: 5px;
+            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--arcade-yellow) 10px, var(--arcade-yellow) 20px);
         }
 
-        .window.fullscreen {
-            top: 25px !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: calc(100vh - 50px) !important;
-            box-shadow: none;
-            border: none;
-            z-index: 20000 !important;
+        .window-body {
+            flex-grow: 1;
+            overflow: auto;
+            position: relative;
         }
-        .window.fullscreen .resize-handle { display: none; }
+        .window-body iframe { width: 100%; height: 100%; background: #000; border: none; }
+
+        /* --- CONTENT STYLES --- */
+        .arcade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .arcade-item {
+            background: linear-gradient(135deg, #222, #000);
+            border: 2px solid #555;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 10px 0 10px 0;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
         
-        /* --- Responsive Design for Mobile (BIG & CLEAR) --- */
-        @media (max-width: 768px) {
-            .desktop {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); /* Adaptive grid */
-                gap: 20px;
-                padding: 20px;
-                align-content: start;
-                overflow-y: auto;
-                top: 50px; /* More space for larger top bar */
-                bottom: 30px;
-            }
+        .arcade-item:hover {
+            border-color: var(--arcade-yellow);
+            transform: scale(1.02);
+            box-shadow: 0 0 10px var(--arcade-yellow);
+        }
+        
+        .arcade-item.special-item {
+            border-color: var(--arcade-pink);
+            background: linear-gradient(135deg, #330022, #000);
+        }
 
-            .desktop-icon {
-                position: relative !important;
-                left: auto !important;
-                top: auto !important;
-                width: auto !important;
-                margin-bottom: 0;
-            }
-            
-            .desktop-icon .icon-visual {
-                width: 70px; /* Big Icons */
-                height: 70px;
-                font-size: 45px;
-                box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
-            }
-            
-            .desktop-icon .icon-label {
-                font-size: 16px; /* Larger readable text */
-                margin-top: 5px;
-                background: rgba(255,255,255,0.95);
-                border: 1px solid #000;
-                padding: 4px 8px;
-                font-weight: bold;
-            }
+        .item-badge {
+            position: absolute; top: 0; right: 0;
+            background: var(--arcade-cyan); color: #000;
+            font-weight: bold; font-size: 10px; padding: 2px 6px;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .item-title { font-size: 18px; font-weight: bold; font-style: italic; color: #fff; }
+        .item-sub { font-size: 12px; color: #aaa; }
 
-            /* Big Top Bar */
-            .top-bar {
-                height: 50px;
-            }
-            .brand {
-                font-size: 24px;
-                line-height: 50px;
-            }
-            .menu-item {
-                font-size: 20px;
-                padding: 0 15px;
-                line-height: 50px;
-            }
-            
-            .bottom-bar {
-                height: 30px;
-            }
-            .scrolling-text-container span {
-                font-size: 18px;
-                line-height: 30px;
-            }
+        .profile-layout {
+            display: flex; justify-content: center; align-items: center; height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMzMzIiAvPgo8L3N2Zz4=');
+        }
+        .profile-card {
+            width: 80%; padding: 20px; border: 2px solid var(--arcade-yellow);
+            background: rgba(0,0,0,0.8); text-align: center;
+            border-radius: 20px;
+        }
+        .link-box a {
+            display: block; margin-top: 10px; padding: 10px;
+            background: var(--arcade-cyan); color: #000; text-decoration: none;
+            font-weight: bold; border-radius: 20px;
+        }
+        .link-box a:hover { background: #fff; }
+        .empty-state { height: 100%; display: flex; align-items: center; justify-content: center; color: #555; font-size: 20px; font-style: italic; }
 
-            .resize-handle {
-                display: none !important;
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        /* --- MOBILE --- */
+        @media (max-width: 800px) {
+            .arcade-header { height: 60px; padding: 0 10px; }
+            .header-title { font-size: 20px; }
+            .bpm-display { font-size: 16px; }
+            
+            .workspace { flex-direction: column-reverse; } /* List at bottom */
+            
+            .tracklist-panel {
+                width: 100%; height: 200px;
+                border-left: none; border-top: 4px solid var(--arcade-cyan);
             }
             
-            /* Big Window Controls */
-            .title-bar {
-                height: 40px; /* Fat title bar for fingers */
-                line-height: 40px;
-                font-size: 20px;
-            }
-            .close-btn {
-                width: 26px; /* Huge close button */
-                height: 26px;
-                top: 7px;
-                left: 7px;
-                background-color: #ffcccc; /* Slight color hint */
+            .track-btn {
+                background: #111;
+                margin: 2px 0;
+                border-radius: 0;
+                border-right: none; border-left: 5px solid #444;
+                justify-content: flex-start;
+                padding-left: 20px;
             }
             
-            /* Fullscreen button usually hidden or pushed right on mobile logic, but if visible: */
-            .fullscreen-btn {
-                display: none; 
+            .track-btn:hover, .track-btn.active {
+                transform: translateX(10px);
+                border-left-color: var(--arcade-yellow);
             }
             
-            /* Windows fill space */
-            .window {
-                box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            .arcade-window {
+                width: 100% !important; height: 100% !important;
+                top: 0 !important; left: 0 !important; transform: none !important;
+                border-radius: 0; border: none;
             }
             
-            .dropdown-menu {
-                min-width: 160px;
-            }
-            .dropdown-item {
-                padding: 12px 16px; /* Big tap targets */
-                font-size: 20px;
-            }
+            .window-decor-bar { display: none; }
         }
     `;
     document.head.appendChild(style);
 
-    const scrollingText = " Metamodel Art  ✦  Oblinof New Multiversal Order  ✦  Social Development  ✦  Experimental Capital  ✦  ";
-
-    root.innerHTML = `
-        <div class="top-bar">
-            <span class="brand">oblinof</span>
-            <div class="menu">
-                <div class="menu-item" id="music-menu-btn">
-                    music
-                    <div class="dropdown-menu" id="music-dropdown">
-                        <div class="dropdown-item" id="music-folder">folder</div>
-                        <div class="dropdown-item" id="music-bandcamp">bandcamp</div>
-                        <div class="dropdown-item" id="music-soundcloud">soundcloud</div>
-                    </div>
-                </div>
-                <div class="menu-item" id="art-menu-btn">art</div>
-                <div class="menu-item" id="about-menu-btn">about</div>
-            </div>
-        </div>
-        <div class="desktop"></div>
-        <div class="bottom-bar">
-             <div class="marquee">
-                <div class="scrolling-text-container">
-                    <span>${scrollingText}</span>
-                    <span>${scrollingText}</span>
-                </div>
-             </div>
-        </div>
-        `;
-
-    desktopElement = root.querySelector('.desktop');
-
-    const iconGrid = [
-        ['music', 'gallery', 'contact', 'trash'],
-        ['datafall', 'paintdelic', 'ambient', 'entity'],
-        ['wordarp', 'realism', 'ravecat', 'psyballz'],
-        ['sydra'],
-    ];
-
-    const iconMap: { [key: string]: AppDefinition } = {};
-    appDefinitions.forEach(app => iconMap[app.id] = app);
+    // 2. Structure
+    root.innerHTML = '';
     
-    const iconSpacingX = 90;
-    const iconSpacingY = 100;
-    const initialOffsetX = 20;
-    const initialOffsetY = 20;
+    const layout = document.createElement('div');
+    layout.className = 'arcade-layout';
 
-    iconGrid.forEach((row, rowIndex) => {
-        row.forEach((id, colIndex) => {
-            const app = iconMap[id];
-            if (app) {
-                const x = initialOffsetX + colIndex * iconSpacingX;
-                const y = initialOffsetY + rowIndex * iconSpacingY;
-                createDesktopIcon(app.name, app.icon, app.action, x, y);
-            }
-        });
-    });
+    // Header
+    layout.innerHTML = `
+        <div class="arcade-header">
+            <div class="header-title">OBLINOF SYSTEM <span style="color:#fff">5th MIX</span></div>
+            <div style="flex-grow:1"></div>
+            <div class="bpm-display">180 BPM</div>
+        </div>
+    `;
+
+    // Workspace
+    const workspace = document.createElement('div');
+    workspace.className = 'workspace';
     
-    // --- Top Bar Logic ---
-    const musicMenuBtn = root.querySelector('#music-menu-btn') as HTMLElement;
-    const musicDropdown = root.querySelector('#music-dropdown') as HTMLElement;
+    // Windows Container (Left Side on Desktop)
+    windowsContainer = document.createElement('div');
+    windowsContainer.className = 'windows-layer';
+    // Must add style to make it overlay properly in the flex space
+    windowsContainer.style.flexGrow = '1';
+    windowsContainer.style.position = 'relative';
+    
+    // Tracklist (Right Side on Desktop)
+    const tracklist = document.createElement('div');
+    tracklist.className = 'tracklist-panel';
 
-    musicMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        musicDropdown.style.display = musicDropdown.style.display === 'block' ? 'none' : 'block';
+    const categories = ['MEDIA', 'TOOLS', 'SYSTEM', 'XENO'];
+    const groupedApps: Record<string, AppDefinition[]> = {};
+    apps.forEach(app => {
+        if (!groupedApps[app.category]) groupedApps[app.category] = [];
+        groupedApps[app.category].push(app);
     });
 
-    document.addEventListener('click', (e) => {
-        if (musicDropdown.style.display === 'block' && !musicMenuBtn.contains(e.target as Node)) {
-            musicDropdown.style.display = 'none';
+    categories.forEach(cat => {
+        if (groupedApps[cat]) {
+            const catHeader = document.createElement('div');
+            catHeader.className = 'category-header';
+            catHeader.innerText = cat;
+            tracklist.appendChild(catHeader);
+
+            groupedApps[cat].forEach(app => {
+                const btn = document.createElement('div');
+                btn.id = `track-btn-${app.id}`;
+                btn.className = 'track-btn';
+                btn.innerHTML = `
+                    <span class="track-name">${app.name}</span>
+                    <span class="no-data">APP</span>
+                `;
+                btn.onclick = app.action;
+                tracklist.appendChild(btn);
+            });
         }
     });
 
-    root.querySelector('#music-folder')?.addEventListener('click', () => {
-        openMusicWindow();
-        musicDropdown.style.display = 'none';
-    });
-    root.querySelector('#music-bandcamp')?.addEventListener('click', () => {
-        openBandcampWindow();
-        musicDropdown.style.display = 'none';
-    });
-    root.querySelector('#music-soundcloud')?.addEventListener('click', () => {
-        openSoundcloudWindow();
-        musicDropdown.style.display = 'none';
-    });
-    root.querySelector('#art-menu-btn')?.addEventListener('click', openGalleryWindow);
-    root.querySelector('#about-menu-btn')?.addEventListener('click', openContactWindow);
+    workspace.appendChild(windowsContainer);
+    workspace.appendChild(tracklist);
+    layout.appendChild(workspace);
+    
+    root.appendChild(layout);
 }
 
 function init() {
