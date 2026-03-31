@@ -78,11 +78,12 @@ const root = document.getElementById('root')!;
 let windowsContainer: HTMLElement | null = null;
 let tracklistPanel: HTMLElement | null = null;
 let workspace: HTMLElement | null = null;
+let layout: HTMLElement | null = null;
 
 // --- Core Functions ---
 
 function updateWorkspaceState() {
-    if (!workspace) return;
+    if (!layout) return;
     
     // If any window is open, we hide the tracklist (Menu) and show the Windows layer
     const hasActiveWindow = windows.length > 0;
@@ -718,7 +719,7 @@ function render() {
     // 2. DOM Structure
     root.innerHTML = '';
     
-    const layout = document.createElement('div');
+    layout = document.createElement('div');
     layout.className = 'ddr-layout';
 
     // Header
