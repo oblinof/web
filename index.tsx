@@ -185,7 +185,7 @@ function openMusicWindow() {
     const djItem = document.createElement('div');
     djItem.className = 'music-item special-item';
     djItem.innerHTML = `
-        <div class="disc-icon spinning">💿</div>
+        <img src="https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-3.png" class="disc-icon spinning" style="width: 30px; height: 30px; image-rendering: pixelated;" />
         <div class="music-info">
             <div class="music-title">DJ OBLI MIXES</div>
             <div class="music-artist">CLOUD STREAM</div>
@@ -198,7 +198,7 @@ function openMusicWindow() {
         const item = document.createElement('div');
         item.className = 'music-item';
         item.innerHTML = `
-            <div class="disc-icon">🎵</div>
+            <img src="https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-0.png" class="disc-icon" style="width: 30px; height: 30px; image-rendering: pixelated;" />
             <div class="music-info">
                 <div class="music-title">${album.title}</div>
                 <div class="music-artist">${album.artist}</div>
@@ -220,7 +220,7 @@ function openContactWindow() {
         <div class="profile-layout">
             <div class="profile-card">
                 <div class="profile-header">
-                    <div class="avatar-placeholder">☻</div>
+                    <img src="https://win98icons.alexmeub.com/icons/png/user_computer-0.png" class="avatar-placeholder" style="image-rendering: pixelated; object-fit: contain; padding: 5px;" />
                     <div class="profile-names">
                         <h2 class="glitch-text" data-text="OBLINOF">OBLINOF</h2>
                         <span class="subtitle">SYSTEM OPERATOR</span>
@@ -261,7 +261,7 @@ function openContactWindow() {
 
 function openTrashWindow() {
     createWindow('trash', 'RECYCLE BIN', `<div class="empty-state">
-        <div style="font-size: 64px; margin-bottom: 20px;">🗑</div>
+        <img src="https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png" style="width: 64px; height: 64px; image-rendering: pixelated; margin-bottom: 20px;" />
         <div>NO GARBAGE DATA FOUND</div>
         <div style="font-size: 12px; color: #666; margin-top: 10px;">SYSTEM CLEAN</div>
     </div>`);
@@ -271,22 +271,22 @@ function openTrashWindow() {
 // --- App Configuration ---
 
 const apps: AppDefinition[] = [
-    { id: 'music', name: 'Music', description: 'Audio Lib', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h4v1h1v4h-2v-2h1v-2h-4v2h1v2h-2v-4h1z"/></svg>', color: '#ff00cc', category: 'MEDIA', action: openMusicWindow },
-    { id: 'gallery', name: 'Gallery', description: 'Visuals', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 1h6v6h-6zm1 1v4h4v-4zm1 2l1 1 1-1 1 2h-4z"/></svg>', color: '#00ffff', category: 'MEDIA', action: openGalleryWindow },
-    { id: 'contact', name: 'Profile', description: 'Player Info', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v2h-2zm-1 3h4v1h1v2h-6v-2h1z"/></svg>', color: '#ffcc00', category: 'SYSTEM', action: openContactWindow },
+    { id: 'music', name: 'Music', description: 'Audio Lib', icon: 'https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-3.png', color: '#ff00cc', category: 'MEDIA', action: openMusicWindow },
+    { id: 'gallery', name: 'Gallery', description: 'Visuals', icon: 'https://win98icons.alexmeub.com/icons/png/camera-0.png', color: '#00ffff', category: 'MEDIA', action: openGalleryWindow },
+    { id: 'contact', name: 'Profile', description: 'Player Info', icon: 'https://win98icons.alexmeub.com/icons/png/address_book-0.png', color: '#ffcc00', category: 'SYSTEM', action: openContactWindow },
     
-    { id: 'datafall', name: 'Datafall', description: 'Water Sim', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M4 1h1v1h1v2h1v2h-1v1h-4v-1h-1v-2h1v-2h1v-1z"/></svg>', color: '#0088ff', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h3v1h1v2h-1v1h-1v2h-1v-2h-1v-1h-1v-2h1z"/></svg>', color: '#ff4444', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ambient', name: 'Ambient', description: 'Synth', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h1v1h1v1h1v2h-1v1h-1v1h-1v-2h-2v-2h2z"/></svg>', color: '#aa00ff', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'entity', name: 'Entity', description: 'Collab', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h4v1h1v1h1v2h-1v1h-1v-1h-4v1h-1v-1h-1v-2h1v-1h1zm1 2v1h1v-1zm2 0v1h1v-1z"/></svg>', color: '#00ff44', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'wordarp', name: 'WordArp', description: 'Console', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 2h6v4h-6zm1 1v2h1v-2zm2 0v2h1v-2z"/></svg>', color: '#ffffff', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'datafall', name: 'Datafall', description: 'Water Sim', icon: 'https://win98icons.alexmeub.com/icons/png/desktop-0.png', color: '#0088ff', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', icon: 'https://win98icons.alexmeub.com/icons/png/paint_file-0.png', color: '#ff4444', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ambient', name: 'Ambient', description: 'Synth', icon: 'https://win98icons.alexmeub.com/icons/png/loudspeaker_rays-0.png', color: '#aa00ff', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'entity', name: 'Entity', description: 'Collab', icon: 'https://win98icons.alexmeub.com/icons/png/ms_dos-0.png', color: '#00ff44', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'wordarp', name: 'WordArp', description: 'Console', icon: 'https://win98icons.alexmeub.com/icons/png/keyboard-0.png', color: '#ffffff', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
     
-    { id: 'realism', name: 'Realism', description: 'Glitch FX', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 3h4v1h1v1h-1v1h-4v-1h-1v-1h1zm2 0v2h1v-2z"/></svg>', color: '#ff0000', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 2h1v1h4v-1h1v3h-1v2h-4v-2h-1zm2 2v1h1v-1zm2 0v1h1v-1z"/></svg>', color: '#ff8800', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v1h1v1h1v2h-1v1h-1v1h-2v-1h-1v-1h-1v-2h1v-1h1zm1 1v1h1v-1z"/></svg>', color: '#8800ff', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'sydra', name: 'Sydra', description: 'Genetics', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h1v1h2v-1h1v1h-1v1h-2v1h2v1h1v1h-1v-1h-2v1h-1v-1h1v-1h2v-1h-2v-1h-1z"/></svg>', color: '#00ff88', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'realism', name: 'Realism', description: 'Glitch FX', icon: 'https://win98icons.alexmeub.com/icons/png/display_properties-0.png', color: '#ff0000', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', icon: 'https://win98icons.alexmeub.com/icons/png/mouse-0.png', color: '#ff8800', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', icon: 'https://win98icons.alexmeub.com/icons/png/game_mine_1-0.png', color: '#8800ff', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'sydra', name: 'Sydra', description: 'Genetics', icon: 'https://win98icons.alexmeub.com/icons/png/network_normal_two_pcs-0.png', color: '#00ff88', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
     
-    { id: 'trash', name: 'Trash', description: 'Empty', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v1h2v1h-6v-1h2zm-1 2h4v4h-4zm1 1v2h1v-2zm1 0v2h1v-2z"/></svg>', color: '#666666', category: 'SYSTEM', action: openTrashWindow },
+    { id: 'trash', name: 'Trash', description: 'Empty', icon: 'https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png', color: '#666666', category: 'SYSTEM', action: openTrashWindow },
 ];
 
 // --- Render ---
@@ -605,6 +605,32 @@ function render() {
         }
         .window-body iframe { width: 100%; height: 100%; border: none; filter: contrast(1.2) brightness(0.9); }
 
+        /* --- SCROLLBAR --- */
+        .custom-scrollbar {
+            overflow-y: auto !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 16px;
+            background: #dfdfdf;
+            border-left: 1px solid #fff;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border-top: 2px solid #fff;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #000;
+            border-right: 2px solid #000;
+        }
+        .custom-scrollbar::-webkit-scrollbar-button {
+            display: block;
+            height: 16px;
+            background: #c0c0c0;
+            border-top: 2px solid #fff;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #000;
+            border-right: 2px solid #000;
+        }
+
         /* --- APP SPECIFIC CONTENT --- */
         
         /* Profile / Player Info */
@@ -694,7 +720,7 @@ function render() {
     // Header
     layout.innerHTML = `
         <div class="ddr-header">
-            <div class="header-logo"><span>OBLINOF OS</span></div>
+            <div class="header-logo"><span>OBLINOF SYSTEM</span></div>
             <div class="bpm-counter">READY</div>
         </div>
     `;
@@ -717,8 +743,12 @@ function render() {
         // Add color hint to border
         btn.style.borderColor = app.color;
         
+        const iconHtml = app.icon.startsWith('http') 
+            ? `<img src="${app.icon}" class="track-icon-large" alt="${app.name}" style="width: 40px; height: 40px; image-rendering: pixelated; margin-bottom: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));" />`
+            : `<div class="track-icon-large" style="text-shadow: 0 0 15px ${app.color}">${app.icon}</div>`;
+
         btn.innerHTML = `
-            <div class="track-icon-large" style="color: ${app.color}; filter: drop-shadow(0 0 5px ${app.color}) drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">${app.icon}</div>
+            ${iconHtml}
             <div class="track-info">
                 <div class="track-title">${app.name}</div>
                 <span class="track-desc" style="color:${app.color}">${app.description}</span>
