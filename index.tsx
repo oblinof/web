@@ -428,7 +428,7 @@ function render() {
             flex-grow: 1;
             position: relative;
             overflow: hidden;
-            background: #000;
+            background: transparent;
             box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
             min-height: 0;
         }
@@ -452,12 +452,12 @@ function render() {
             overflow-y: auto;
             overflow-x: hidden;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             grid-auto-rows: 140px;
             gap: 15px;
             align-content: start;
             transition: transform 0.4s ease, opacity 0.4s ease;
-            background: #001122;
+            background: transparent;
         }
         
         .ddr-layout.app-active .tracklist-panel {
@@ -508,7 +508,7 @@ function render() {
         }
 
         .track-info { text-align: center; z-index: 2; width: 100%; padding: 0 5px; }
-        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px;}
+        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         .track-desc { display: none; } /* Hide description for cleaner look */
 
         /* --- WINDOWS LAYER (FULL SCREEN) --- */
@@ -698,7 +698,7 @@ function render() {
         /* --- MOBILE --- */
         @media (max-width: 600px) {
             .tracklist-panel { 
-                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
+                grid-template-columns: repeat(3, 1fr); 
                 grid-auto-rows: 110px;
                 gap: 10px; 
                 padding: 10px; 
