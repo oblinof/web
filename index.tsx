@@ -88,9 +88,9 @@ function updateWorkspaceState() {
     const hasActiveWindow = windows.length > 0;
 
     if (hasActiveWindow) {
-        workspace.classList.add('app-active');
+        layout.classList.add('app-active');
     } else {
-        workspace.classList.remove('app-active');
+        layout.classList.remove('app-active');
     }
 }
 
@@ -318,6 +318,7 @@ function render() {
             color: #fff;
             font-family: var(--font-main);
             overflow: hidden;
+            height: 100vh;
             height: 100dvh;
             width: 100%;
         }
@@ -346,6 +347,7 @@ function render() {
         #root {
             position: relative;
             width: 100%; height: 100%;
+            overflow: hidden;
             background: 
                 radial-gradient(circle at center, #001122 0%, #000 100%),
                 linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
@@ -387,6 +389,7 @@ function render() {
             box-shadow: inset 0 -2px 5px rgba(0,0,0,0.5);
             flex-shrink: 0;
             z-index: 200;
+            overflow: hidden;
         }
 
         .header-logo {
@@ -426,6 +429,7 @@ function render() {
             overflow: hidden;
             background: #000;
             box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
+            min-height: 0;
         }
 
         /* Screen scanlines */
@@ -445,6 +449,7 @@ function render() {
             height: 100%;
             padding: 15px;
             overflow-y: auto;
+            overflow-x: hidden;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             grid-auto-rows: 140px;
@@ -454,7 +459,7 @@ function render() {
             background: #001122;
         }
         
-        .workspace.app-active .tracklist-panel {
+        .ddr-layout.app-active .tracklist-panel {
             transform: scale(1.1);
             opacity: 0;
             pointer-events: none;
@@ -509,12 +514,12 @@ function render() {
         .windows-layer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100;
+            z-index: 300;
             pointer-events: none;
             display: none;
         }
         
-        .workspace.app-active .windows-layer {
+        .ddr-layout.app-active .windows-layer {
             display: block;
             pointer-events: auto;
         }
@@ -551,11 +556,12 @@ function render() {
             padding: 0 10px;
             flex-shrink: 0;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+            overflow: hidden;
         }
 
-        .header-title-box { display: flex; align-items: center; gap: 10px; }
+        .header-title-box { display: flex; align-items: center; gap: 10px; overflow: hidden; }
         .header-label { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
-        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; }
+        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .ctrl-btn {
             background: #cc3333;
@@ -594,6 +600,7 @@ function render() {
             position: relative;
             background: #000;
             overflow: hidden;
+            min-height: 0;
         }
         .window-body iframe { width: 100%; height: 100%; border: none; filter: contrast(1.2) brightness(0.9); }
 
@@ -698,8 +705,12 @@ function render() {
             .track-btn { height: auto; }
             .track-icon-large { width: 32px !important; height: 32px !important; margin-bottom: 5px; }
             .track-title { font-size: 10px; }
-            .header-logo { font-size: 16px; padding: 4px 8px; }
-            .bpm-counter { font-size: 14px; }
+            .header-logo { font-size: 16px; padding: 4px 8px; overflow: hidden; }
+            .header-logo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .bpm-counter { font-size: 14px; flex-shrink: 0; }
+            .window-header { height: 35px; padding: 0 5px; }
+            .header-name { font-size: 12px; }
+            .ctrl-btn { padding: 2px 8px; font-size: 10px; }
         }
     `;
     document.head.appendChild(style);
@@ -757,9 +768,9 @@ function render() {
     });
 
     workspace.appendChild(tracklistPanel);
-    workspace.appendChild(windowsContainer);
 
     layout.appendChild(workspace);
+    layout.appendChild(windowsContainer);
     root.appendChild(layout);
 }
 
