@@ -2,19 +2,11 @@
 // --- State Management ---
 interface AppWindow {
     id: number;
-    appId: string; // Link to the app definition
+    appId: string;
     title: string;
     content: string | HTMLElement;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
     zIndex: number;
-    isDraggable: boolean;
-    isMinimized: boolean;
-    isMaximized: boolean;
     element?: HTMLElement;
-    preMaximizeState?: { x: string; y: string; width: string; height: string };
 }
 
 interface MusicAlbum {
@@ -26,7 +18,9 @@ interface MusicAlbum {
 interface AppDefinition {
     id: string;
     name: string;
-    icon: string;
+    description: string;
+    icon: string; // Emoji or HTML for the icon
+    color: string; // Accent color for the card
     category: 'SYSTEM' | 'MEDIA' | 'TOOLS' | 'XENO';
     action: () => void;
 }
@@ -82,96 +76,72 @@ const musicAlbums: MusicAlbum[] = [
 // --- DOM Elements ---
 const root = document.getElementById('root')!;
 let windowsContainer: HTMLElement | null = null;
-
+let tracklistPanel: HTMLElement | null = null;
+let workspace: HTMLElement | null = null;
 
 // --- Core Functions ---
 
-function isMobileDevice() {
-    return window.innerWidth < 800;
+function updateWorkspaceState() {
+    if (!workspace) return;
+    
+    // If any window is open, we hide the tracklist (Menu) and show the Windows layer
+    const hasActiveWindow = windows.length > 0;
+
+    if (hasActiveWindow) {
+        workspace.classList.add('app-active');
+    } else {
+        workspace.classList.remove('app-active');
+    }
 }
 
-function createWindow(appId: string, title: string, content: string | HTMLElement, width = 800, height = 600) {
-    // Check if window exists and is just minimized
-    const existingWin = windows.find(w => w.appId === appId);
-    if (existingWin) {
-        restoreWindow(existingWin);
-        return;
+function createWindow(appId: string, title: string, content: string | HTMLElement) {
+    // Single tasking mode: Close other windows first (Game Console style)
+    if (windows.length > 0) {
+        // Just clear the array and DOM for simplicity in this arcade style
+        windows = [];
+        if (windowsContainer) windowsContainer.innerHTML = '';
     }
 
     highestZIndex++;
     
-    // Smart Positioning
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
-    
-    // Arcade style: Center-Left biased
-    let startX = 20;
-    let startY = 100;
-    
-    if (isMobileDevice()) {
-        width = viewportW;
-        height = viewportH - 80; // Leave space for header
-        startX = 0;
-        startY = 80;
-    } else {
-        // Clamp to screen, avoid the right sidebar area (approx 300px)
-        const availableW = viewportW - 320;
-        if (width > availableW) width = availableW - 20;
-        if (height > viewportH - 120) height = viewportH - 120;
-        
-        startX = (availableW - width) / 2;
-        startY = (viewportH - height) / 2 + 30;
-    }
-
     const newWindow: AppWindow = {
         id: nextWindowId++,
         appId: appId,
         title: title,
         content: content,
-        x: startX,
-        y: startY,
-        width: width,
-        height: height,
         zIndex: highestZIndex,
-        isDraggable: !isMobileDevice(),
-        isMinimized: false,
-        isMaximized: isMobileDevice(), 
     };
 
     renderWindowElement(newWindow);
     windows.push(newWindow);
-    updateTaskbarActiveState();
+    updateWorkspaceState();
 }
 
 function renderWindowElement(win: AppWindow) {
     const windowEl = document.createElement('div');
     windowEl.id = `window-${win.id}`;
-    windowEl.className = `arcade-window ${win.isMaximized ? 'maximized' : ''}`;
+    windowEl.className = `ddr-window entrance-anim`;
     windowEl.style.zIndex = `${win.zIndex}`;
     
-    // Initial Styles
-    if (!win.isMaximized) {
-        windowEl.style.width = `${win.width}px`;
-        windowEl.style.height = `${win.height}px`;
-        windowEl.style.transform = `translate(${win.x}px, ${win.y}px)`;
-    }
-
-    // Header / Controls (Arcade Style)
+    // Header / Controls
     const headerHTML = `
         <div class="window-header">
-            <div class="header-pill">STAGE: ${win.title}</div>
+            <div class="header-title-box">
+                <span class="header-label">RUNNING //</span>
+                <span class="header-name">${win.title}</span>
+            </div>
             <div class="window-controls">
-                <button class="ctrl-btn minimize-btn">_</button>
-                <button class="ctrl-btn maximize-btn">[]</button>
-                <button class="ctrl-btn close-btn">X</button>
+                <button class="ctrl-btn close-btn" title="EXIT APP">EXIT X</button>
             </div>
         </div>
-        <div class="window-decor-bar"></div>
+        <div class="difficulty-bar">
+             <span class="diff-tag active">SYSTEM BUSY</span>
+             <span class="diff-stripes">////////////////////////////////////////////////</span>
+        </div>
     `;
 
     windowEl.innerHTML = headerHTML;
 
-    // Content
     const contentContainer = document.createElement('div');
     contentContainer.className = 'window-body custom-scrollbar';
     
@@ -182,77 +152,17 @@ function renderWindowElement(win: AppWindow) {
     }
     windowEl.appendChild(contentContainer);
     
-    // Append to DOM
     if (!windowsContainer) {
-        windowsContainer = document.createElement('div');
-        windowsContainer.className = 'windows-layer';
-        root.appendChild(windowsContainer);
+        windowsContainer = document.querySelector('.windows-layer');
     }
-    windowsContainer.appendChild(windowEl);
+    if (windowsContainer) windowsContainer.appendChild(windowEl);
     win.element = windowEl;
 
-    // Event Listeners
-    setupWindowEvents(win, windowEl);
-}
-
-function setupWindowEvents(win: AppWindow, el: HTMLElement) {
-    const closeBtn = el.querySelector('.close-btn');
-    const minBtn = el.querySelector('.minimize-btn');
-    const maxBtn = el.querySelector('.maximize-btn');
-    const header = el.querySelector('.window-header') as HTMLElement;
-
-    closeBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeWindow(win);
-    });
-
-    minBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        minimizeWindow(win);
-    });
-
-    maxBtn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMaximize(win);
-    });
-
-    el.addEventListener('mousedown', () => {
-        bringToFront(win);
-    });
-
-    // Dragging Logic
-    if (win.isDraggable) {
-        header.addEventListener('mousedown', (e) => {
-            if (win.isMaximized) return; 
-            e.preventDefault();
-            bringToFront(win);
-            
-            let shiftX = e.clientX - win.x;
-            let shiftY = e.clientY - win.y;
-
-            const onMouseMove = (ev: MouseEvent) => {
-                win.x = ev.clientX - shiftX;
-                win.y = ev.clientY - shiftY;
-                el.style.transform = `translate(${win.x}px, ${win.y}px)`;
-            };
-
-            const onMouseUp = () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            };
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        });
-    }
-}
-
-function bringToFront(win: AppWindow) {
-    if (win.zIndex < highestZIndex) {
-        highestZIndex++;
-        win.zIndex = highestZIndex;
-        if (win.element) win.element.style.zIndex = `${highestZIndex}`;
-    }
+    setTimeout(() => windowEl.classList.remove('entrance-anim'), 500);
+    
+    // Setup Events
+    const closeBtn = windowEl.querySelector('.close-btn');
+    closeBtn?.addEventListener('click', () => closeWindow(win));
 }
 
 function closeWindow(win: AppWindow) {
@@ -261,95 +171,44 @@ function closeWindow(win: AppWindow) {
         setTimeout(() => {
             win.element?.remove();
             windows = windows.filter(w => w.id !== win.id);
-            updateTaskbarActiveState();
-        }, 200);
+            updateWorkspaceState();
+        }, 300);
     }
 }
-
-function minimizeWindow(win: AppWindow) {
-    win.isMinimized = true;
-    if (win.element) {
-        win.element.style.display = 'none';
-    }
-    updateTaskbarActiveState();
-}
-
-function restoreWindow(win: AppWindow) {
-    win.isMinimized = false;
-    if (win.element) {
-        win.element.style.display = 'flex';
-        bringToFront(win);
-        win.element.classList.remove('minimizing');
-        win.element.classList.add('restoring');
-        setTimeout(() => win.element?.classList.remove('restoring'), 200);
-    }
-    updateTaskbarActiveState();
-}
-
-function toggleMaximize(win: AppWindow) {
-    if (!win.element) return;
-    
-    if (win.isMaximized) {
-        // Restore
-        win.isMaximized = false;
-        win.element.classList.remove('maximized');
-        win.element.style.width = `${win.width}px`;
-        window.setTimeout(() => {
-             if(win.element) win.element.style.transform = `translate(${win.x}px, ${win.y}px)`;
-        }, 10);
-       
-    } else {
-        // Maximize
-        win.preMaximizeState = {
-            x: win.element.style.transform,
-            y: win.element.style.top,
-            width: win.element.style.width,
-            height: win.element.style.height
-        };
-        win.isMaximized = true;
-        win.element.classList.add('maximized');
-        win.element.style.transform = 'none';
-        win.element.style.width = '100%';
-        win.element.style.height = '100%';
-    }
-}
-
 
 // --- App Content Generators ---
 
 function openMusicWindow() {
     const container = document.createElement('div');
-    container.className = 'arcade-grid';
+    container.className = 'music-grid';
     
-    // DJ Mix Item
     const djItem = document.createElement('div');
-    djItem.className = 'arcade-item special-item';
+    djItem.className = 'music-item special-item';
     djItem.innerHTML = `
-        <div class="item-badge">HOT</div>
-        <div class="item-info">
-            <div class="item-title">DJ OBLI</div>
-            <div class="item-sub">Liminal Mixes</div>
+        <div class="disc-icon spinning">💿</div>
+        <div class="music-info">
+            <div class="music-title">DJ OBLI MIXES</div>
+            <div class="music-artist">CLOUD STREAM</div>
         </div>
     `;
     djItem.onclick = () => createWindow('dj_obli', 'DJ OBLI // MIXES', `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%2300ffff&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`);
     container.appendChild(djItem);
 
-    // Albums
     musicAlbums.forEach((album, idx) => {
         const item = document.createElement('div');
-        item.className = 'arcade-item';
+        item.className = 'music-item';
         item.innerHTML = `
-            <div class="item-badge">CD</div>
-            <div class="item-info">
-                <div class="item-title">${album.title}</div>
-                <div class="item-sub">${album.artist}</div>
+            <div class="disc-icon">🎵</div>
+            <div class="music-info">
+                <div class="music-title">${album.title}</div>
+                <div class="music-artist">${album.artist}</div>
             </div>
         `;
-        item.onclick = () => createWindow(`album_${idx}`, `AUDIO: ${album.title}`, album.iframe, 400, 500);
+        item.onclick = () => createWindow(`album_${idx}`, `AUDIO: ${album.title}`, album.iframe);
         container.appendChild(item);
     });
 
-    createWindow('music', 'SELECT MUSIC', container);
+    createWindow('music', 'MUSIC SELECT', container);
 }
 
 function openGalleryWindow() {
@@ -357,89 +216,125 @@ function openGalleryWindow() {
 }
 
 function openContactWindow() {
-    createWindow('contact', 'PLAYER INFO', `
+    createWindow('contact', 'PLAYER DATA', `
         <div class="profile-layout">
             <div class="profile-card">
-                <h2 style="font-size: 32px; color: #ffcc00; font-style: italic;">OBLINOF</h2>
-                <div style="background: #000; padding: 10px; border: 2px solid #00ffff; margin: 10px 0;">
-                    <p>CLASS: MULTIMEDIA ARTIST</p>
-                    <p>RANK: SSS</p>
-                    <p>LOCATION: GRID_NODE_07</p>
+                <div class="profile-header">
+                    <div class="avatar-placeholder">☻</div>
+                    <div class="profile-names">
+                        <h2 class="glitch-text" data-text="OBLINOF">OBLINOF</h2>
+                        <span class="subtitle">SYSTEM OPERATOR</span>
+                    </div>
                 </div>
-                <p>>> Crafting audiovisual experiences since [2007].</p>
-                <div class="link-box">
-                    <a href="mailto:oblinof@gmail.com" target="_blank">EMAIL TRANSMISSION</a>
-                    <a href="https://linktr.ee/oblinof" target="_blank">NEURAL LINKTREE</a>
+                
+                <div class="stats-grid">
+                    <div class="stat-row">
+                        <span class="stat-label">CLASS</span>
+                        <span class="stat-val">ARTIST/DESIGNER</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">RANK</span>
+                        <span class="stat-val text-yellow">SSS</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">ZONE</span>
+                        <span class="stat-val">AUDIOVISUAL METAMODEL</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">EXP</span>
+                        <span class="stat-val">SINCE [2007]</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="mailto:oblinof@gmail.com" target="_blank" class="action-btn">
+                        <span>✉ SEND MAIL</span>
+                    </a>
+                    <a href="https://linktr.ee/oblinof" target="_blank" class="action-btn">
+                        <span>∞ NEURAL LINK</span>
+                    </a>
                 </div>
             </div>
         </div>
-    `, 500, 450);
+    `);
 }
 
 function openTrashWindow() {
-    createWindow('trash', 'RECYCLE', `<div class="empty-state">NO GARBAGE DATA FOUND</div>`, 300, 200);
+    createWindow('trash', 'RECYCLE BIN', `<div class="empty-state">
+        <div style="font-size: 64px; margin-bottom: 20px;">🗑</div>
+        <div>NO GARBAGE DATA FOUND</div>
+        <div style="font-size: 12px; color: #666; margin-top: 10px;">SYSTEM CLEAN</div>
+    </div>`);
 }
 
 
 // --- App Configuration ---
 
 const apps: AppDefinition[] = [
-    { id: 'music', name: 'Music Select', icon: '♫', category: 'MEDIA', action: openMusicWindow },
-    { id: 'gallery', name: 'Visual Gallery', icon: '🖼', category: 'MEDIA', action: openGalleryWindow },
-    { id: 'contact', name: 'Player Info', icon: '✉', category: 'SYSTEM', action: openContactWindow },
-    { id: 'trash', name: 'Recycle Bin', icon: '🗑', category: 'SYSTEM', action: openTrashWindow },
+    { id: 'music', name: 'Music', description: 'Audio Lib', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h4v1h1v4h-2v-2h1v-2h-4v2h1v2h-2v-4h1z"/></svg>', color: '#ff00cc', category: 'MEDIA', action: openMusicWindow },
+    { id: 'gallery', name: 'Gallery', description: 'Visuals', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 1h6v6h-6zm1 1v4h4v-4zm1 2l1 1 1-1 1 2h-4z"/></svg>', color: '#00ffff', category: 'MEDIA', action: openGalleryWindow },
+    { id: 'contact', name: 'Profile', description: 'Player Info', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v2h-2zm-1 3h4v1h1v2h-6v-2h1z"/></svg>', color: '#ffcc00', category: 'SYSTEM', action: openContactWindow },
     
-    { id: 'datafall', name: 'Datafall', icon: '💧', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'paintdelic', name: 'Paintdelic', icon: '🎨', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ambient', name: 'Ambient', icon: '🔊', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'entity', name: 'Entity', icon: '👾', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'wordarp', name: 'WordArp', icon: '🎹', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'datafall', name: 'Datafall', description: 'Water Sim', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M4 1h1v1h1v2h1v2h-1v1h-4v-1h-1v-2h1v-2h1v-1z"/></svg>', color: '#0088ff', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h3v1h1v2h-1v1h-1v2h-1v-2h-1v-1h-1v-2h1z"/></svg>', color: '#ff4444', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ambient', name: 'Ambient', description: 'Synth', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h1v1h1v1h1v2h-1v1h-1v1h-1v-2h-2v-2h2z"/></svg>', color: '#aa00ff', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'entity', name: 'Entity', description: 'Collab', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h4v1h1v1h1v2h-1v1h-1v-1h-4v1h-1v-1h-1v-2h1v-1h1zm1 2v1h1v-1zm2 0v1h1v-1z"/></svg>', color: '#00ff44', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'wordarp', name: 'WordArp', description: 'Console', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 2h6v4h-6zm1 1v2h1v-2zm2 0v2h1v-2z"/></svg>', color: '#ffffff', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
     
-    { id: 'realism', name: 'Realism', icon: '👁', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ravecat', name: 'Ravecat', icon: '🐈', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'psyballz', name: 'PsyBallz', icon: '🔮', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'sydra', name: 'Sydra', icon: '🧬', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'realism', name: 'Realism', description: 'Glitch FX', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 3h4v1h1v1h-1v1h-4v-1h-1v-1h1zm2 0v2h1v-2z"/></svg>', color: '#ff0000', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M1 2h1v1h4v-1h1v3h-1v2h-4v-2h-1zm2 2v1h1v-1zm2 0v1h1v-1z"/></svg>', color: '#ff8800', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v1h1v1h1v2h-1v1h-1v1h-2v-1h-1v-1h-1v-2h1v-1h1zm1 1v1h1v-1z"/></svg>', color: '#8800ff', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    { id: 'sydra', name: 'Sydra', description: 'Genetics', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 1h1v1h2v-1h1v1h-1v1h-2v1h2v1h1v1h-1v-1h-2v1h-1v-1h1v-1h2v-1h-2v-1h-1z"/></svg>', color: '#00ff88', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
+    
+    { id: 'trash', name: 'Trash', description: 'Empty', icon: '<svg viewBox="0 0 8 8" width="40" height="40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M3 1h2v1h2v1h-6v-1h2zm-1 2h4v4h-4zm1 1v2h1v-2zm1 0v2h1v-2z"/></svg>', color: '#666666', category: 'SYSTEM', action: openTrashWindow },
 ];
-
-function updateTaskbarActiveState() {
-    apps.forEach(app => {
-        const btn = document.getElementById(`track-btn-${app.id}`);
-        if (btn) {
-            const isOpen = windows.some(w => w.appId === app.id);
-            if (isOpen) btn.classList.add('active');
-            else btn.classList.remove('active');
-        }
-    });
-}
 
 // --- Render ---
 
 function render() {
-    // 1. CSS Styles
     const style = document.createElement('style');
     style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,700&display=swap');
 
         :root {
-            --arcade-yellow: #ffcc00;
-            --arcade-cyan: #00ffff;
-            --arcade-pink: #ff00cc;
-            --arcade-dark: #000b1e;
-            --arcade-grid: #002244;
-            --font-arcade: 'Share Tech Mono', sans-serif;
+            --ddr-yellow: #ffcc00;
+            --ddr-cyan: #00ffff;
+            --ddr-blue: #000033;
+            --ddr-pink: #ff00cc;
+            --ddr-dark: #000000;
+            --font-main: 'Chakra Petch', sans-serif;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0; padding: 0;
-            background-color: var(--arcade-dark);
+            background-color: var(--ddr-blue);
             color: #fff;
-            font-family: var(--font-arcade);
+            font-family: var(--font-main);
             overflow: hidden;
             height: 100vh;
             width: 100vw;
-            /* Global Slant for speed */
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes rainbow-text {
+            0% { color: #fff; text-shadow: 2px 2px 0 #000; }
+            25% { color: var(--ddr-cyan); text-shadow: 2px 2px 0 var(--ddr-pink); }
+            50% { color: var(--ddr-yellow); text-shadow: 2px 2px 0 #000; }
+            75% { color: var(--ddr-pink); text-shadow: 2px 2px 0 var(--ddr-cyan); }
+            100% { color: #fff; text-shadow: 2px 2px 0 #000; }
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 5px var(--ddr-cyan); }
+            50% { box-shadow: 0 0 15px var(--ddr-cyan), 0 0 30px var(--ddr-cyan); }
+            100% { box-shadow: 0 0 5px var(--ddr-cyan); }
+        }
+
+        @keyframes bgScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
         }
 
         /* --- BACKGROUND --- */
@@ -447,385 +342,401 @@ function render() {
             position: relative;
             width: 100%; height: 100%;
             background: 
-                radial-gradient(circle at 50% 50%, transparent 20%, var(--arcade-dark) 80%),
-                radial-gradient(circle, var(--arcade-grid) 2px, transparent 2.5px);
-            background-size: 100% 100%, 20px 20px;
-            animation: scrollBg 20s linear infinite;
-        }
-        
-        @keyframes scrollBg {
-            0% { background-position: 0 0, 0 0; }
-            100% { background-position: 0 0, 40px 40px; }
+                radial-gradient(circle at center, #001122 0%, #000 100%),
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            animation: bgScroll 10s linear infinite;
         }
 
-        /* --- MAIN LAYOUT --- */
-        .arcade-layout {
+        /* --- LAYOUT --- */
+        .ddr-layout {
             display: flex;
             height: 100%;
             width: 100%;
             flex-direction: column;
+            position: relative;
+            z-index: 10;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #5a6b5d; /* Base hardware color */
+            border-left: 10px solid #4a5a4d;
+            border-right: 10px solid #4a5a4d;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 50px rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 10px;
         }
 
-        /* --- TOP BANNER (Select Music Style) --- */
-        .arcade-header {
-            height: 70px;
-            background: linear-gradient(90deg, var(--arcade-yellow), #cc9900);
-            border-bottom: 4px solid #fff;
+        /* Hardware texture overlay */
+        .ddr-layout::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="none"/><path d="M0 0L4 4M4 0L0 4" stroke="rgba(0,0,0,0.05)" stroke-width="1"/></svg>');
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* --- HEADER --- */
+        .ddr-header {
+            height: 60px;
+            background: #2a3b2d;
+            border: 2px solid #1a2b1d;
+            border-bottom: 4px solid #111;
+            border-top: 4px solid #7a8b7d;
+            border-radius: 5px;
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            box-shadow: 0 5px 15px rgba(255, 204, 0, 0.5);
-            z-index: 2000;
-            clip-path: polygon(0 0, 100% 0, 100% 80%, 95% 100%, 0 100%);
+            justify-content: space-between;
+            padding: 0 15px;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+            z-index: 200;
         }
 
-        .header-title {
-            font-size: 32px;
-            color: #000;
+        .header-logo {
+            font-size: 24px;
             font-weight: 900;
-            font-style: italic;
-            text-transform: uppercase;
-            letter-spacing: -1px;
-            text-shadow: 2px 2px 0px #fff;
-            padding-right: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            background: #000;
+            padding: 5px 10px;
+            border: 2px inset #333;
+            border-radius: 3px;
+        }
+        .header-logo span { display: block; animation: pulse-glow 2s infinite; }
+
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 5px #00ff00; color: #00ff00; }
+            50% { text-shadow: 0 0 15px #00ff00, 0 0 20px #00ff00; color: #ccffcc; }
+        }
+
+        .bpm-counter {
+            background: #000;
+            color: #ff9900;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 5px 10px;
+            border: 2px inset #333;
+            border-radius: 3px;
+            text-shadow: 0 0 5px #ff9900;
+        }
+
+        /* --- WORKSPACE --- */
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            border: 4px solid #333;
+            border-radius: 5px;
+            box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
+        }
+
+        /* Screen scanlines */
+        .workspace::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        /* --- APP SELECTOR (MAIN MENU) --- */
+        .tracklist-panel {
+            width: 100%;
+            height: 100%;
+            padding: 15px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-auto-rows: 140px;
+            gap: 15px;
+            align-content: start;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+            background: #001122;
         }
         
-        .bpm-display {
-            background: #000;
-            color: var(--arcade-pink);
-            font-size: 24px;
-            padding: 5px 15px;
-            border-radius: 20px;
+        .workspace.app-active .tracklist-panel {
+            transform: scale(1.1);
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* --- ICON CARD (Hardware Button Style) --- */
+        .track-btn {
+            background: #d0d0d0;
             border: 2px solid #fff;
-            font-style: italic;
-            animation: pulse 0.5s infinite alternate;
-        }
-
-        /* --- WORKSPACE (Split) --- */
-        .workspace {
-            display: flex;
-            flex-grow: 1;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* --- RIGHT TRACKLIST (Sidebar) --- */
-        .tracklist-panel {
-            width: 300px;
-            background: rgba(0,0,0,0.8);
-            border-left: 2px solid var(--arcade-cyan);
+            border-bottom: 4px solid #888;
+            border-right: 4px solid #888;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
-            padding: 20px 0;
-            overflow-y: auto;
-            position: relative;
-            z-index: 1000;
-        }
-        
-        .tracklist-panel::-webkit-scrollbar { width: 0px; }
-
-        .category-header {
-            color: var(--arcade-cyan);
-            font-size: 14px;
-            font-style: italic;
-            text-align: right;
-            padding-right: 20px;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            text-shadow: 0 0 5px var(--arcade-cyan);
-            border-bottom: 1px solid var(--arcade-cyan);
-        }
-
-        .track-btn {
-            height: 50px;
-            margin-bottom: 8px;
-            display: flex;
             align-items: center;
-            justify-content: flex-end; /* Align right */
-            padding-right: 20px;
+            justify-content: center;
             cursor: pointer;
-            transition: transform 0.1s;
             position: relative;
-            
-            /* The pill shape background */
-            background: linear-gradient(90deg, transparent 0%, #000 20%, #222 100%);
-            border-radius: 25px 0 0 25px; /* Round left side */
-            border-right: 5px solid #444;
+            overflow: hidden;
+            transition: all 0.1s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
         }
 
         .track-btn:hover {
-            transform: translateX(-10px);
-            background: linear-gradient(90deg, transparent 0%, #000 20%, #333 100%);
-            border-right-color: var(--arcade-yellow);
+            background: #e0e0e0;
+            transform: translateY(1px);
+            border-bottom: 3px solid #888;
+            border-right: 3px solid #888;
         }
 
-        .track-btn.active {
-            transform: translateX(-15px);
-            border-right: 5px solid var(--arcade-cyan);
-            background: linear-gradient(90deg, transparent 0%, #001122 20%, #003344 100%);
-        }
-        
-        .track-btn.active .track-name {
-            color: var(--arcade-cyan);
-            text-shadow: 0 0 5px var(--arcade-cyan);
+        .track-btn:active {
+            transform: translateY(3px) translateX(1px);
+            border-bottom: 1px solid #888;
+            border-right: 1px solid #888;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+            background: #c0c0c0;
         }
 
-        .track-name {
-            font-size: 18px;
-            font-weight: bold;
-            font-style: italic;
-            color: #fff;
-            text-transform: uppercase;
-        }
-        
-        .track-icon {
-            margin-left: 10px;
-            font-size: 20px;
-            width: 30px;
-            text-align: center;
-            color: var(--arcade-yellow);
-        }
-        
-        .no-data {
-            background: #555;
-            color: #000;
-            font-size: 10px;
-            padding: 2px 4px;
-            margin-left: 10px;
-            border-radius: 2px;
-            font-weight: bold;
+        .track-icon-large {
+            font-size: 40px;
+            margin-bottom: 10px;
+            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));
+            color: #333;
         }
 
-        /* --- WINDOWS --- */
-        .arcade-window {
+        .track-info { text-align: center; z-index: 2; width: 100%; padding: 0 5px; }
+        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px;}
+        .track-desc { display: none; } /* Hide description for cleaner look */
+
+        /* --- WINDOWS LAYER (FULL SCREEN) --- */
+        .windows-layer {
             position: absolute;
-            background: rgba(0, 10, 30, 0.95);
-            border: 3px solid var(--arcade-cyan);
-            border-radius: 20px 0 20px 0; /* Arcade styling */
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .workspace.app-active .windows-layer {
+            display: block;
+            pointer-events: auto;
+        }
+
+        .ddr-window {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #001122;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), 5px 5px 0px rgba(0,0,0,0.5);
-            transition: opacity 0.2s;
-            overflow: hidden;
+            animation: appOpen 0.2s ease-out;
         }
 
-        .arcade-window.maximized {
-            top: 0 !important; left: 0 !important;
-            width: 100% !important; height: 100% !important;
-            transform: none !important;
-            border-radius: 0;
-            z-index: 5000 !important;
+        @keyframes appOpen {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .ddr-window.closing {
+            animation: appClose 0.2s forwards;
+        }
+        @keyframes appClose {
+            to { transform: scale(1.05); opacity: 0; }
         }
 
+        /* Window Header - Hardware Style */
         .window-header {
             height: 40px;
-            background: linear-gradient(90deg, var(--arcade-cyan), #009999);
+            background: #4a5a4d;
+            border-bottom: 2px solid #2a3b2d;
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 10px;
-            user-select: none;
+            flex-shrink: 0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
         }
 
-        .header-pill {
-            background: #000;
-            color: #fff;
-            padding: 2px 15px;
-            border-radius: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            font-style: italic;
-            border: 1px solid #fff;
-        }
+        .header-title-box { display: flex; align-items: center; gap: 10px; }
+        .header-label { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
+        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; }
 
-        .window-controls { display: flex; gap: 5px; }
-        
         .ctrl-btn {
-            width: 25px; height: 25px;
-            background: #000;
-            border: 2px solid #fff;
+            background: #cc3333;
+            border: 2px solid #ff6666;
+            border-bottom: 3px solid #660000;
+            border-right: 3px solid #660000;
             color: #fff;
+            padding: 2px 10px;
             font-weight: bold;
-            border-radius: 50%;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            border-radius: 4px;
             cursor: pointer;
+            text-shadow: 1px 1px 0 #000;
         }
-        .ctrl-btn:hover { background: #fff; color: #000; }
-        .close-btn:hover { background: var(--arcade-pink); border-color: var(--arcade-pink); }
+        .ctrl-btn:active {
+            transform: translateY(2px) translateX(1px);
+            border-bottom: 1px solid #660000;
+            border-right: 1px solid #660000;
+        }
 
-        .window-decor-bar {
-            height: 5px;
-            background: repeating-linear-gradient(45deg, #000, #000 10px, var(--arcade-yellow) 10px, var(--arcade-yellow) 20px);
+        .difficulty-bar {
+            height: 15px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            border-bottom: 2px solid #333;
+            padding: 0 5px;
         }
+        .diff-tag { font-size: 10px; color: #00ff00; font-family: 'Courier New', Courier, monospace; margin-right: 10px;}
+        .diff-stripes { font-size: 10px; color: #00ff00; letter-spacing: 2px; white-space: nowrap; font-family: 'Courier New', Courier, monospace;}
 
         .window-body {
             flex-grow: 1;
-            overflow: auto;
             position: relative;
-        }
-        .window-body iframe { width: 100%; height: 100%; background: #000; border: none; }
-
-        /* --- CONTENT STYLES --- */
-        .arcade-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-        }
-
-        .arcade-item {
-            background: linear-gradient(135deg, #222, #000);
-            border: 2px solid #555;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 10px 0 10px 0;
-            transition: all 0.2s;
-            position: relative;
+            background: #000;
             overflow: hidden;
         }
-        
-        .arcade-item:hover {
-            border-color: var(--arcade-yellow);
-            transform: scale(1.02);
-            box-shadow: 0 0 10px var(--arcade-yellow);
-        }
-        
-        .arcade-item.special-item {
-            border-color: var(--arcade-pink);
-            background: linear-gradient(135deg, #330022, #000);
-        }
+        .window-body iframe { width: 100%; height: 100%; border: none; filter: contrast(1.2) brightness(0.9); }
 
-        .item-badge {
-            position: absolute; top: 0; right: 0;
-            background: var(--arcade-cyan); color: #000;
-            font-weight: bold; font-size: 10px; padding: 2px 6px;
-            border-bottom-left-radius: 5px;
-        }
+        /* --- APP SPECIFIC CONTENT --- */
         
-        .item-title { font-size: 18px; font-weight: bold; font-style: italic; color: #fff; }
-        .item-sub { font-size: 12px; color: #aaa; }
-
+        /* Profile / Player Info */
         .profile-layout {
-            display: flex; justify-content: center; align-items: center; height: 100%;
-            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMzMzIiAvPgo8L3N2Zz4=');
+            height: 100%; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            background: #001122;
+            padding: 10px;
         }
         .profile-card {
-            width: 80%; padding: 20px; border: 2px solid var(--arcade-yellow);
-            background: rgba(0,0,0,0.8); text-align: center;
-            border-radius: 20px;
+            width: 100%; height: 100%;
+            background: #000;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            display: flex; flex-direction: column;
         }
-        .link-box a {
-            display: block; margin-top: 10px; padding: 10px;
-            background: var(--arcade-cyan); color: #000; text-decoration: none;
-            font-weight: bold; border-radius: 20px;
-        }
-        .link-box a:hover { background: #fff; }
-        .empty-state { height: 100%; display: flex; align-items: center; justify-content: center; color: #555; font-size: 20px; font-style: italic; }
 
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.05); opacity: 0.8; }
+        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px dashed #00ff00; padding-bottom: 15px; }
+        .avatar-placeholder {
+            width: 60px; height: 60px; background: #003300; border: 1px solid #00ff00;
+            display: flex; align-items: center; justify-content: center; font-size: 30px; color: #00ff00;
         }
+        .profile-names h2 { font-size: 24px; margin: 0; line-height: 1; color: #00ff00; font-family: 'Courier New', Courier, monospace; text-shadow: 0 0 5px #00ff00; }
+        .subtitle { color: #aaffaa; font-size: 12px; font-family: 'Courier New', Courier, monospace; }
+
+        .stats-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; flex-grow: 1; }
+        .stat-row { background: #001100; padding: 8px; border: 1px solid #003300; display: flex; justify-content: space-between; align-items: center; }
+        .stat-label { font-size: 12px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
+        .stat-val { font-size: 14px; color: #00ff00; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+        .text-yellow { color: #ffcc00; text-shadow: 0 0 5px #ffcc00; }
+
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .action-btn {
+            padding: 12px; text-align: center;
+            background: #003300; color: #00ff00; font-weight: bold; text-decoration: none;
+            border: 1px solid #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .action-btn:active { background: #00ff00; color: #000; }
+
+        /* Music Grid */
+        .music-grid {
+            display: grid; grid-template-columns: 1fr;
+            gap: 10px; padding: 10px;
+            background: #001122;
+        }
+        .music-item {
+            background: #000; border: 1px solid #00ff00; padding: 10px;
+            display: flex; align-items: center; gap: 15px;
+            cursor: pointer;
+        }
+        .music-item:active { background: #003300; }
+        .disc-icon { font-size: 30px; color: #00ff00; }
+        .spinning { animation: spin 2s linear infinite; }
+        .music-info { text-align: left; }
+        .music-title { font-weight: bold; color: #00ff00; font-family: 'Courier New', Courier, monospace; font-size: 14px; margin-bottom: 2px; }
+        .music-artist { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
+        .special-item { border-color: #ffcc00; }
+        .special-item .music-title { color: #ffcc00; }
+        .special-item .disc-icon { color: #ffcc00; }
+
+        /* Empty State */
+        .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00ff00; background: #000; font-family: 'Courier New', Courier, monospace; }
 
         /* --- MOBILE --- */
-        @media (max-width: 800px) {
-            .arcade-header { height: 60px; padding: 0 10px; }
-            .header-title { font-size: 20px; }
-            .bpm-display { font-size: 16px; }
-            
-            .workspace { flex-direction: column-reverse; } /* List at bottom */
-            
-            .tracklist-panel {
-                width: 100%; height: 200px;
-                border-left: none; border-top: 4px solid var(--arcade-cyan);
-            }
-            
-            .track-btn {
-                background: #111;
-                margin: 2px 0;
+        @media (max-width: 600px) {
+            .ddr-layout {
+                border: none;
                 border-radius: 0;
-                border-right: none; border-left: 5px solid #444;
-                justify-content: flex-start;
-                padding-left: 20px;
+                padding: 0;
+                max-width: 100%;
             }
-            
-            .track-btn:hover, .track-btn.active {
-                transform: translateX(10px);
-                border-left-color: var(--arcade-yellow);
-            }
-            
-            .arcade-window {
-                width: 100% !important; height: 100% !important;
-                top: 0 !important; left: 0 !important; transform: none !important;
-                border-radius: 0; border: none;
-            }
-            
-            .window-decor-bar { display: none; }
+            .tracklist-panel { grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+            .track-btn { height: 100px; }
+            .track-icon-large { font-size: 30px; margin-bottom: 5px; }
+            .track-title { font-size: 10px; }
         }
     `;
     document.head.appendChild(style);
 
-    // 2. Structure
+    // 2. DOM Structure
     root.innerHTML = '';
     
     const layout = document.createElement('div');
-    layout.className = 'arcade-layout';
+    layout.className = 'ddr-layout';
 
     // Header
     layout.innerHTML = `
-        <div class="arcade-header">
-            <div class="header-title">OBLINOF SYSTEM <span style="color:#fff">5th MIX</span></div>
-            <div style="flex-grow:1"></div>
-            <div class="bpm-display">180 BPM</div>
+        <div class="ddr-header">
+            <div class="header-logo"><span>OBLINOF OS</span></div>
+            <div class="bpm-counter">READY</div>
         </div>
     `;
 
     // Workspace
-    const workspace = document.createElement('div');
+    workspace = document.createElement('div');
     workspace.className = 'workspace';
     
-    // Windows Container (Left Side on Desktop)
+    // Windows Container (Full Overlay)
     windowsContainer = document.createElement('div');
     windowsContainer.className = 'windows-layer';
-    // Must add style to make it overlay properly in the flex space
-    windowsContainer.style.flexGrow = '1';
-    windowsContainer.style.position = 'relative';
     
-    // Tracklist (Right Side on Desktop)
-    const tracklist = document.createElement('div');
-    tracklist.className = 'tracklist-panel';
+    // Main Menu (Tracklist)
+    tracklistPanel = document.createElement('div');
+    tracklistPanel.className = 'tracklist-panel custom-scrollbar';
 
-    const categories = ['MEDIA', 'TOOLS', 'SYSTEM', 'XENO'];
-    const groupedApps: Record<string, AppDefinition[]> = {};
     apps.forEach(app => {
-        if (!groupedApps[app.category]) groupedApps[app.category] = [];
-        groupedApps[app.category].push(app);
+        const btn = document.createElement('div');
+        btn.className = 'track-btn';
+        // Add color hint to border
+        btn.style.borderColor = app.color;
+        
+        btn.innerHTML = `
+            <div class="track-icon-large" style="color: ${app.color}; filter: drop-shadow(0 0 5px ${app.color}) drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">${app.icon}</div>
+            <div class="track-info">
+                <div class="track-title">${app.name}</div>
+                <span class="track-desc" style="color:${app.color}">${app.description}</span>
+            </div>
+        `;
+        
+        // Add specific hover color logic via inline event for simplicity in this generated code
+        btn.onmouseenter = () => { btn.style.background = '#e0e0e0'; };
+        btn.onmouseleave = () => { btn.style.background = '#d0d0d0'; };
+
+        btn.onclick = app.action;
+        tracklistPanel.appendChild(btn);
     });
 
-    categories.forEach(cat => {
-        if (groupedApps[cat]) {
-            const catHeader = document.createElement('div');
-            catHeader.className = 'category-header';
-            catHeader.innerText = cat;
-            tracklist.appendChild(catHeader);
-
-            groupedApps[cat].forEach(app => {
-                const btn = document.createElement('div');
-                btn.id = `track-btn-${app.id}`;
-                btn.className = 'track-btn';
-                btn.innerHTML = `
-                    <span class="track-name">${app.name}</span>
-                    <span class="no-data">APP</span>
-                `;
-                btn.onclick = app.action;
-                tracklist.appendChild(btn);
-            });
-        }
-    });
-
+    workspace.appendChild(tracklistPanel);
     workspace.appendChild(windowsContainer);
-    workspace.appendChild(tracklist);
+
     layout.appendChild(workspace);
-    
     root.appendChild(layout);
 }
 
