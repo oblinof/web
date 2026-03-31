@@ -696,22 +696,26 @@ function render() {
         .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00ff00; background: #000; font-family: 'Courier New', Courier, monospace; }
 
         /* --- MOBILE --- */
-        @media (max-width: 600px) {
+        @media (max-width: 900px) and (orientation: portrait) {
             .tracklist-panel { 
                 grid-template-columns: repeat(3, 1fr); 
-                grid-auto-rows: 110px;
-                gap: 10px; 
-                padding: 10px; 
+                grid-auto-rows: 28vw;
+                gap: 3vw; 
+                padding: 3vw; 
             }
-            .track-btn { height: auto; }
-            .track-icon-large { width: 32px !important; height: 32px !important; margin-bottom: 5px; }
-            .track-title { font-size: 10px; }
-            .header-logo { font-size: 16px; padding: 4px 8px; overflow: hidden; }
+            .track-btn { height: auto; border-width: 0.5vw; border-bottom-width: 1vw; border-right-width: 1vw; border-radius: 2vw; }
+            .track-icon-large { width: 12vw !important; height: 12vw !important; font-size: 12vw !important; margin-bottom: 2vw !important; display: flex; align-items: center; justify-content: center; }
+            .track-title { font-size: 3.5vw; padding: 0.5vw; border-radius: 0.5vw; }
+            .header-logo { font-size: 5vw; padding: 1vw 2vw; overflow: hidden; }
             .header-logo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .bpm-counter { font-size: 14px; flex-shrink: 0; }
-            .window-header { height: 35px; padding: 0 5px; }
-            .header-name { font-size: 12px; }
-            .ctrl-btn { padding: 2px 8px; font-size: 10px; }
+            .bpm-counter { font-size: 4vw; padding: 1vw 2vw; border-width: 0.5vw; border-radius: 1vw; flex-shrink: 0; }
+            .ddr-header { height: 12vw; padding: 0 3vw; }
+            .window-header { height: 10vw; padding: 0 2vw; border-bottom-width: 0.5vw; }
+            .header-name { font-size: 4vw; }
+            .ctrl-btn { padding: 1vw 3vw; font-size: 3.5vw; border-width: 0.5vw; border-bottom-width: 1vw; border-right-width: 1vw; border-radius: 1vw; }
+            .diff-tag { font-size: 3vw; margin-right: 2vw; }
+            .diff-stripes { font-size: 3vw; letter-spacing: 0.5vw; }
+            .difficulty-bar { height: 5vw; border-bottom-width: 0.5vw; padding: 0 2vw; }
         }
     `;
     document.head.appendChild(style);
