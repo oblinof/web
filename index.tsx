@@ -311,6 +311,8 @@ function render() {
         html {
             height: 100%;
             width: 100%;
+            margin: 0;
+            padding: 0;
         }
 
         body {
@@ -319,9 +321,11 @@ function render() {
             color: #fff;
             font-family: var(--font-main);
             overflow: hidden;
+            overflow-x: hidden;
             height: 100vh;
             height: 100dvh;
             width: 100%;
+            max-width: 100vw;
         }
 
         /* --- ANIMATIONS --- */
@@ -366,6 +370,8 @@ function render() {
             position: relative;
             z-index: 10;
             background-color: #001122; /* Base OS color */
+            min-width: 0;
+            overflow: hidden;
         }
 
         /* Hardware texture overlay */
@@ -391,6 +397,7 @@ function render() {
             flex-shrink: 0;
             z-index: 200;
             overflow: hidden;
+            min-width: 0;
         }
 
         .header-logo {
@@ -403,8 +410,10 @@ function render() {
             padding: 5px 10px;
             border: 2px inset #333;
             border-radius: 3px;
+            min-width: 0;
+            flex-shrink: 1;
         }
-        .header-logo span { display: block; animation: pulse-glow 2s infinite; }
+        .header-logo span { display: block; animation: pulse-glow 2s infinite; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
         @keyframes pulse-glow {
             0%, 100% { text-shadow: 0 0 5px #00ff00; color: #00ff00; }
@@ -431,6 +440,7 @@ function render() {
             background: transparent;
             box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
             min-height: 0;
+            min-width: 0;
         }
 
         /* Screen scanlines */
@@ -458,6 +468,7 @@ function render() {
             align-content: start;
             transition: transform 0.4s ease, opacity 0.4s ease;
             background: transparent;
+            min-width: 0;
         }
         
         .ddr-layout.app-active .tracklist-panel {
@@ -483,6 +494,7 @@ function render() {
             overflow: hidden;
             transition: all 0.1s;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            min-width: 0;
         }
 
         .track-btn:hover {
@@ -507,8 +519,8 @@ function render() {
             color: #333;
         }
 
-        .track-info { text-align: center; z-index: 2; width: 100%; padding: 0 5px; }
-        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+        .track-info { text-align: center; z-index: 2; width: 100%; padding: 0 5px; min-width: 0; }
+        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; display: block; }
         .track-desc { display: none; } /* Hide description for cleaner look */
 
         /* --- WINDOWS LAYER (FULL SCREEN) --- */
@@ -532,6 +544,8 @@ function render() {
             display: flex;
             flex-direction: column;
             animation: appOpen 0.2s ease-out;
+            min-width: 0;
+            overflow: hidden;
         }
 
         @keyframes appOpen {
@@ -558,11 +572,12 @@ function render() {
             flex-shrink: 0;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
             overflow: hidden;
+            min-width: 0;
         }
 
-        .header-title-box { display: flex; align-items: center; gap: 10px; overflow: hidden; }
-        .header-label { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
-        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .header-title-box { display: flex; align-items: center; gap: 10px; overflow: hidden; min-width: 0; flex-shrink: 1; }
+        .header-label { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; flex-shrink: 0; }
+        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; display: block; }
 
         .ctrl-btn {
             background: #cc3333;
@@ -602,6 +617,7 @@ function render() {
             background: #000;
             overflow: hidden;
             min-height: 0;
+            min-width: 0;
         }
         .window-body iframe { width: 100%; height: 100%; border: none; filter: contrast(1.2) brightness(0.9); }
 
@@ -646,6 +662,7 @@ function render() {
             border: 2px solid #00ff00;
             padding: 15px;
             display: flex; flex-direction: column;
+            overflow-y: auto;
         }
 
         .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px dashed #00ff00; padding-bottom: 15px; }
@@ -696,26 +713,26 @@ function render() {
         .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00ff00; background: #000; font-family: 'Courier New', Courier, monospace; }
 
         /* --- MOBILE --- */
-        @media (max-width: 900px) and (orientation: portrait) {
+        @media (max-width: 768px) {
             .tracklist-panel { 
                 grid-template-columns: repeat(3, 1fr); 
-                grid-auto-rows: 28vw;
-                gap: 3vw; 
-                padding: 3vw; 
+                grid-auto-rows: minmax(100px, 28vw);
+                gap: 10px; 
+                padding: 10px; 
             }
-            .track-btn { height: auto; border-width: 0.5vw; border-bottom-width: 1vw; border-right-width: 1vw; border-radius: 2vw; }
-            .track-icon-large { width: 12vw !important; height: 12vw !important; font-size: 12vw !important; margin-bottom: 2vw !important; display: flex; align-items: center; justify-content: center; }
-            .track-title { font-size: 3.5vw; padding: 0.5vw; border-radius: 0.5vw; }
-            .header-logo { font-size: 5vw; padding: 1vw 2vw; overflow: hidden; }
+            .track-btn { height: auto; border-width: 2px; border-bottom-width: 4px; border-right-width: 4px; border-radius: 8px; }
+            .track-icon-large { width: 40px !important; height: 40px !important; font-size: 40px !important; margin-bottom: 5px !important; display: flex; align-items: center; justify-content: center; }
+            .track-title { font-size: clamp(10px, 3.5vw, 14px); padding: 2px; border-radius: 2px; }
+            .header-logo { font-size: clamp(16px, 5vw, 24px); padding: 5px 10px; overflow: hidden; }
             .header-logo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .bpm-counter { font-size: 4vw; padding: 1vw 2vw; border-width: 0.5vw; border-radius: 1vw; flex-shrink: 0; }
-            .ddr-header { height: 12vw; padding: 0 3vw; }
-            .window-header { height: 10vw; padding: 0 2vw; border-bottom-width: 0.5vw; }
-            .header-name { font-size: 4vw; }
-            .ctrl-btn { padding: 1vw 3vw; font-size: 3.5vw; border-width: 0.5vw; border-bottom-width: 1vw; border-right-width: 1vw; border-radius: 1vw; }
-            .diff-tag { font-size: 3vw; margin-right: 2vw; }
-            .diff-stripes { font-size: 3vw; letter-spacing: 0.5vw; }
-            .difficulty-bar { height: 5vw; border-bottom-width: 0.5vw; padding: 0 2vw; }
+            .bpm-counter { font-size: clamp(12px, 4vw, 16px); padding: 5px 10px; border-width: 2px; border-radius: 3px; flex-shrink: 0; }
+            .ddr-header { height: 50px; padding: 0 10px; }
+            .window-header { height: 40px; padding: 0 10px; border-bottom-width: 2px; }
+            .header-name { font-size: clamp(12px, 4vw, 16px); }
+            .ctrl-btn { padding: 2px 10px; font-size: clamp(10px, 3.5vw, 14px); border-width: 2px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 4px; }
+            .diff-tag { font-size: 10px; margin-right: 5px; }
+            .diff-stripes { font-size: 10px; letter-spacing: 2px; }
+            .difficulty-bar { height: 15px; border-bottom-width: 2px; padding: 0 5px; }
         }
     `;
     document.head.appendChild(style);
