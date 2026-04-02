@@ -98,6 +98,7 @@ function renderStyle() {
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
+            max-width: 100vw; overflow-x: hidden;
             background-color: var(--bg);
             color: var(--text);
             font-family: 'VT323', 'Courier New', monospace;
@@ -106,7 +107,9 @@ function renderStyle() {
             text-transform: uppercase;
         }
         #root {
-            width: 100%; height: 100%;
+            width: 100% !important; height: 100%;
+            max-width: 100% !important;
+            overflow-x: hidden;
         }
         .crt {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -124,12 +127,14 @@ function renderStyle() {
             100% { top: 100%; }
         }
         .container {
-            width: 100%; height: 100%; position: relative; z-index: 10;
+            width: 100% !important; height: 100%; position: relative; z-index: 10;
+            max-width: 100% !important;
             display: flex; flex-direction: column;
+            overflow-x: hidden;
         }
         
         /* Boot Screen */
-        .boot-screen { padding: 20px; white-space: pre-wrap; word-wrap: break-word; }
+        .boot-screen { padding: 20px; white-space: pre-wrap; word-wrap: break-word; min-width: 0; }
         .cursor { display: inline-block; width: 12px; height: 22px; background: var(--text); animation: blink 1s step-end infinite; vertical-align: bottom; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
@@ -137,20 +142,22 @@ function renderStyle() {
         .main-menu {
             padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;
             animation: turn-on 0.5s ease-out;
+            min-width: 0; width: 100%;
         }
         @keyframes turn-on {
             0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(3); }
             50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
             100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
         }
-        .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; max-width: 100%; overflow: hidden; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .category { margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; max-width: 100%; overflow: hidden; min-width: 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; min-width: 0; width: 100%; }
+        .category { margin-bottom: 20px; min-width: 0; }
         .category-title { color: var(--yellow); border-bottom: 1px solid var(--text-dim); margin-bottom: 10px; padding-bottom: 5px; }
         .bios-btn {
             cursor: pointer; padding: 5px; transition: all 0.1s; display: block;
             color: var(--text); text-decoration: none;
             background: transparent; border: none; text-align: left; font-family: inherit; font-size: inherit; width: 100%;
+            min-width: 0;
         }
         .bios-btn:hover { background: var(--highlight); color: var(--highlight-text); }
         .bios-btn .desc { color: var(--text-dim); font-size: 18px; margin-left: 15px; }
@@ -158,9 +165,11 @@ function renderStyle() {
         
         /* Fullscreen App */
         .fullscreen-app {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100% !important; height: 100%;
+            max-width: 100% !important;
             display: flex; flex-direction: column; background: #000; z-index: 100;
             animation: crt-flicker 0.1s infinite;
+            overflow-x: hidden;
         }
         @keyframes crt-flicker {
             0% { opacity: 0.98; }
@@ -170,24 +179,24 @@ function renderStyle() {
         .app-topbar {
             background: var(--highlight); color: var(--highlight-text);
             padding: 5px 15px; display: flex; justify-content: space-between; align-items: center;
-            font-weight: bold; flex-shrink: 0;
+            font-weight: bold; flex-shrink: 0; min-width: 0;
         }
         .btn-exit {
             background: #000; color: var(--highlight); border: 1px solid #000;
             font-family: inherit; font-size: 18px; cursor: pointer; padding: 2px 10px;
-            text-transform: uppercase;
+            text-transform: uppercase; flex-shrink: 0;
         }
         .btn-exit:hover { background: var(--text); color: #000; }
-        .app-content { flex-grow: 1; position: relative; overflow: auto; }
-        .app-content iframe { width: 100%; height: 100%; border: none; }
+        .app-content { flex-grow: 1; position: relative; overflow: auto; min-width: 0; width: 100%; }
+        .app-content iframe { width: 100%; height: 100%; border: none; max-width: 100% !important; }
         
         /* Misc */
-        .bios-profile { padding: 20px; max-width: 100%; overflow: hidden; }
+        .bios-profile { padding: 20px; max-width: 100%; overflow: hidden; min-width: 0; }
         .bios-link { color: var(--cyan); text-decoration: none; cursor: pointer; display: inline-block; word-break: break-all; }
         .bios-link:hover { background: var(--cyan); color: #000; }
-        .music-menu { padding: 20px; }
+        .music-menu { padding: 20px; min-width: 0; width: 100%; }
         pre { white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-x: hidden; margin: 0; font-family: inherit; }
-        .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; }
+        .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; min-width: 0; }
 
         @media (max-width: 768px) {
             .grid { grid-template-columns: 1fr; }
