@@ -135,7 +135,7 @@ function renderStyle() {
 
         /* Main Menu */
         .main-menu {
-            padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto;
+            padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;
             animation: turn-on 0.5s ease-out;
         }
         @keyframes turn-on {
@@ -143,7 +143,7 @@ function renderStyle() {
             50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
             100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
         }
-        .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; max-width: 100%; overflow: hidden; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .category { margin-bottom: 20px; }
         .category-title { color: var(--yellow); border-bottom: 1px solid var(--text-dim); margin-bottom: 10px; padding-bottom: 5px; }
@@ -182,14 +182,18 @@ function renderStyle() {
         .app-content iframe { width: 100%; height: 100%; border: none; }
         
         /* Misc */
-        .bios-profile { padding: 20px; }
-        .bios-link { color: var(--cyan); text-decoration: none; cursor: pointer; }
+        .bios-profile { padding: 20px; max-width: 100%; overflow: hidden; }
+        .bios-link { color: var(--cyan); text-decoration: none; cursor: pointer; display: inline-block; word-break: break-all; }
         .bios-link:hover { background: var(--cyan); color: #000; }
         .music-menu { padding: 20px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-x: hidden; margin: 0; font-family: inherit; }
+        .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .grid { grid-template-columns: 1fr; }
-            font-size: 18px;
+            body, html { font-size: 16px; }
+            .bios-btn .desc { font-size: 14px; display: block; margin-left: 15px; margin-top: 5px; }
+            .header { font-size: 18px; }
         }
     `;
     document.head.appendChild(style);
@@ -261,9 +265,9 @@ function renderMainMenu() {
     const header = document.createElement('div');
     header.className = 'header';
     header.innerHTML = `
-        <div>==================================================</div>
+        <div class="header-line">====================================================================================================</div>
         <div>OBLINOF OS - MAIN MENU</div>
-        <div>==================================================</div>
+        <div class="header-line">====================================================================================================</div>
     `;
     container.appendChild(header);
 
