@@ -1,803 +1,372 @@
-
-// --- State Management ---
-interface AppWindow {
-    id: number;
-    appId: string;
-    title: string;
-    content: string | HTMLElement;
-    zIndex: number;
-    element?: HTMLElement;
-}
-
+// --- Data ---
 interface MusicAlbum {
     title: string;
     artist: string;
     iframe: string;
 }
 
+const musicAlbums: MusicAlbum[] = [
+    { title: 'Opalyn', artist: 'Faycle', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2788353006/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: 'Kickgun & Dentalcore VOL2', artist: 'oblinof', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=105379128/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: 'Graphical Interface Trance', artist: 'Oblinof', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2659704266/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: 'edits, tools, & trash', artist: 'Oblinof', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2147918188/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: 'Dogma', artist: 'Aloe Engine', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=193817841/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: ',-Dr3ja', artist: 'Oblinof', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=541149304/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: '842', artist: 'Aural Eq', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=1723178745/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` },
+    { title: 'Wifi Pineal', artist: 'Oblinof', iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=3419546872/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless></iframe>` }
+];
+
 interface AppDefinition {
     id: string;
     name: string;
     description: string;
-    icon: string; // Emoji or HTML for the icon
-    color: string; // Accent color for the card
     category: 'SYSTEM' | 'MEDIA' | 'TOOLS' | 'XENO';
-    action: () => void;
+    color: string;
+    content: string | (() => HTMLElement);
 }
 
-let windows: AppWindow[] = [];
-let nextWindowId = 0;
-let highestZIndex = 100;
-
-// --- Data ---
-const musicAlbums: MusicAlbum[] = [
-    {
-        title: 'Opalyn',
-        artist: 'Faycle',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2788353006/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/opalyn">Opalyn by Faycle</a></iframe>`
-    },
-    {
-        title: 'Kickgun & Dentalcore VOL2',
-        artist: 'oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=105379128/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/kickgun-dentalcore-vol2">Kickgun &amp; Dentalcore VOL2 by oblinof</a></iframe>`
-    },
-    {
-        title: 'Graphical Interface Trance',
-        artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2659704266/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/graphical-interface-trance">Graphical Interface Trance by Oblinof</a></iframe>`
-    },
-    {
-        title: 'edits, tools, & trash',
-        artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=2147918188/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/edits-tools-trash">edits, tools, &amp; trash by Oblinof</a></iframe>`
-    },
-    {
-        title: 'Dogma',
-        artist: 'Aloe Engine',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=193817841/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dogma">Dogma by Aloe Engine</a></iframe>`
-    },
-    {
-        title: ',-Dr3ja',
-        artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=541149304/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/dr3ja">,-Dr3ja by Oblinof</a></iframe>`
-    },
-    {
-        title: '842',
-        artist: 'Aural Eq',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=1723178745/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/842">842 by Aural Eq</a></iframe>`
-    },
-    {
-        title: 'Wifi Pineal',
-        artist: 'Oblinof',
-        iframe: `<iframe style="border: 0; width: 100%; height: 100%;" src="https://bandcamp.com/EmbeddedPlayer/album=3419546872/size=large/bgcol=000000/linkcol=00ffff/tracklist=false/transparent=true/" seamless><a href="https://environment-texture.bandcamp.com/album/wifi-pineal">Wifi Pineal by Oblinof</a></iframe>`
-    }
-];
-
-// --- DOM Elements ---
-const root = document.getElementById('root')!;
-let windowsContainer: HTMLElement | null = null;
-let tracklistPanel: HTMLElement | null = null;
-let workspace: HTMLElement | null = null;
-let layout: HTMLElement | null = null;
-
-// --- Core Functions ---
-
-function updateWorkspaceState() {
-    if (!layout) return;
-    
-    // If any window is open, we hide the tracklist (Menu) and show the Windows layer
-    const hasActiveWindow = windows.length > 0;
-
-    if (hasActiveWindow) {
-        layout.classList.add('app-active');
-    } else {
-        layout.classList.remove('app-active');
-    }
-}
-
-function createWindow(appId: string, title: string, content: string | HTMLElement) {
-    // Single tasking mode: Close other windows first (Game Console style)
-    if (windows.length > 0) {
-        // Just clear the array and DOM for simplicity in this arcade style
-        windows = [];
-        if (windowsContainer) windowsContainer.innerHTML = '';
-    }
-
-    highestZIndex++;
-    
-    const newWindow: AppWindow = {
-        id: nextWindowId++,
-        appId: appId,
-        title: title,
-        content: content,
-        zIndex: highestZIndex,
-    };
-
-    renderWindowElement(newWindow);
-    windows.push(newWindow);
-    updateWorkspaceState();
-}
-
-function renderWindowElement(win: AppWindow) {
-    const windowEl = document.createElement('div');
-    windowEl.id = `window-${win.id}`;
-    windowEl.className = `ddr-window entrance-anim`;
-    windowEl.style.zIndex = `${win.zIndex}`;
-    
-    // Header / Controls
-    const headerHTML = `
-        <div class="window-header">
-            <div class="header-title-box">
-                <span class="header-label">RUNNING //</span>
-                <span class="header-name">${win.title}</span>
-            </div>
-            <div class="window-controls">
-                <button class="ctrl-btn close-btn" title="EXIT APP">EXIT X</button>
-            </div>
-        </div>
-        <div class="difficulty-bar">
-             <span class="diff-tag active">SYSTEM BUSY</span>
-             <span class="diff-stripes">////////////////////////////////////////////////</span>
-        </div>
-    `;
-
-    windowEl.innerHTML = headerHTML;
-
-    const contentContainer = document.createElement('div');
-    contentContainer.className = 'window-body custom-scrollbar';
-    
-    if (typeof win.content === 'string') {
-        contentContainer.innerHTML = win.content;
-    } else {
-        contentContainer.appendChild(win.content);
-    }
-    windowEl.appendChild(contentContainer);
-    
-    if (!windowsContainer) {
-        windowsContainer = document.querySelector('.windows-layer');
-    }
-    if (windowsContainer) windowsContainer.appendChild(windowEl);
-    win.element = windowEl;
-
-    setTimeout(() => windowEl.classList.remove('entrance-anim'), 500);
-    
-    // Setup Events
-    const closeBtn = windowEl.querySelector('.close-btn');
-    closeBtn?.addEventListener('click', () => closeWindow(win));
-}
-
-function closeWindow(win: AppWindow) {
-    if (win.element) {
-        win.element.classList.add('closing');
-        setTimeout(() => {
-            win.element?.remove();
-            windows = windows.filter(w => w.id !== win.id);
-            updateWorkspaceState();
-        }, 300);
-    }
-}
-
-// --- App Content Generators ---
-
-function openMusicWindow() {
+function getMusicContent() {
     const container = document.createElement('div');
-    container.className = 'music-grid';
+    container.className = 'music-menu';
     
-    const djItem = document.createElement('div');
-    djItem.className = 'music-item special-item';
-    djItem.innerHTML = `
-        <img src="https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-3.png" class="disc-icon spinning" style="width: 30px; height: 30px; image-rendering: pixelated;" />
-        <div class="music-info">
-            <div class="music-title">DJ OBLI MIXES</div>
-            <div class="music-artist">CLOUD STREAM</div>
-        </div>
-    `;
-    djItem.onclick = () => createWindow('dj_obli', 'DJ OBLI // MIXES', `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%2300ffff&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`);
+    const djItem = document.createElement('button');
+    djItem.className = 'bios-btn';
+    djItem.innerHTML = `> [EXEC] DJ OBLI MIXES`;
+    djItem.onclick = () => launchApp('dj_obli', 'DJ OBLI // MIXES', `<iframe style="border: 0; width: 100%; height: 100%;" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1581868891&color=%2300ffff&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true"></iframe>`);
     container.appendChild(djItem);
 
     musicAlbums.forEach((album, idx) => {
-        const item = document.createElement('div');
-        item.className = 'music-item';
-        item.innerHTML = `
-            <img src="https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-0.png" class="disc-icon" style="width: 30px; height: 30px; image-rendering: pixelated;" />
-            <div class="music-info">
-                <div class="music-title">${album.title}</div>
-                <div class="music-artist">${album.artist}</div>
-            </div>
-        `;
-        item.onclick = () => createWindow(`album_${idx}`, `AUDIO: ${album.title}`, album.iframe);
+        const item = document.createElement('button');
+        item.className = 'bios-btn';
+        item.innerHTML = `> [EXEC] ${album.title.toUpperCase()} - ${album.artist.toUpperCase()}`;
+        item.onclick = () => launchApp(`album_${idx}`, `AUDIO: ${album.title}`, album.iframe);
         container.appendChild(item);
     });
-
-    createWindow('music', 'MUSIC SELECT', container);
+    return container;
 }
-
-function openGalleryWindow() {
-    createWindow('gallery', 'VISUAL MODE', `<iframe src="https://artviewer.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`);
-}
-
-function openContactWindow() {
-    createWindow('contact', 'PLAYER DATA', `
-        <div class="profile-layout">
-            <div class="profile-card">
-                <div class="profile-header">
-                    <img src="https://win98icons.alexmeub.com/icons/png/user_computer-0.png" class="avatar-placeholder" style="image-rendering: pixelated; object-fit: contain; padding: 5px;" />
-                    <div class="profile-names">
-                        <h2 class="glitch-text" data-text="OBLINOF">OBLINOF</h2>
-                        <span class="subtitle">SYSTEM OPERATOR</span>
-                    </div>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-row">
-                        <span class="stat-label">CLASS</span>
-                        <span class="stat-val">ARTIST/DESIGNER</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">RANK</span>
-                        <span class="stat-val text-yellow">SSS</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">ZONE</span>
-                        <span class="stat-val">AUDIOVISUAL METAMODEL</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">EXP</span>
-                        <span class="stat-val">SINCE [2007]</span>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <a href="mailto:oblinof@gmail.com" target="_blank" class="action-btn">
-                        <span>✉ SEND MAIL</span>
-                    </a>
-                    <a href="https://linktr.ee/oblinof" target="_blank" class="action-btn">
-                        <span>∞ NEURAL LINK</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    `);
-}
-
-function openTrashWindow() {
-    createWindow('trash', 'RECYCLE BIN', `<div class="empty-state">
-        <img src="https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png" style="width: 64px; height: 64px; image-rendering: pixelated; margin-bottom: 20px;" />
-        <div>NO GARBAGE DATA FOUND</div>
-        <div style="font-size: 12px; color: #666; margin-top: 10px;">SYSTEM CLEAN</div>
-    </div>`);
-}
-
-
-// --- App Configuration ---
 
 const apps: AppDefinition[] = [
-    { id: 'music', name: 'Music', description: 'Audio Lib', icon: 'https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-3.png', color: '#ff00cc', category: 'MEDIA', action: openMusicWindow },
-    { id: 'gallery', name: 'Gallery', description: 'Visuals', icon: 'https://win98icons.alexmeub.com/icons/png/camera-0.png', color: '#00ffff', category: 'MEDIA', action: openGalleryWindow },
-    { id: 'contact', name: 'Profile', description: 'Player Info', icon: 'https://win98icons.alexmeub.com/icons/png/address_book-0.png', color: '#ffcc00', category: 'SYSTEM', action: openContactWindow },
-    
-    { id: 'datafall', name: 'Datafall', description: 'Water Sim', icon: 'https://win98icons.alexmeub.com/icons/png/desktop-0.png', color: '#0088ff', category: 'TOOLS', action: () => createWindow('datafall', 'DATAFALL.EXE', `<iframe src="https://datafall.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', icon: 'https://win98icons.alexmeub.com/icons/png/paint_file-0.png', color: '#ff4444', category: 'TOOLS', action: () => createWindow('paintdelic', 'PAINTDELIC_V2', `<iframe src="https://paintedelic.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ambient', name: 'Ambient', description: 'Synth', icon: 'https://win98icons.alexmeub.com/icons/png/loudspeaker_rays-0.png', color: '#aa00ff', category: 'TOOLS', action: () => createWindow('ambient', 'AMBIENT PORTABLE', `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'entity', name: 'Entity', description: 'Collab', icon: 'https://win98icons.alexmeub.com/icons/png/ms_dos-0.png', color: '#00ff44', category: 'TOOLS', action: () => createWindow('entity', 'ENTITY COLLAB', `<iframe src="https://entity-collab.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'wordarp', name: 'WordArp', description: 'Console', icon: 'https://win98icons.alexmeub.com/icons/png/keyboard-0.png', color: '#ffffff', category: 'TOOLS', action: () => createWindow('wordarp', 'WORD ARP CONSOLE', `<iframe src="https://wordarp.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    
-    { id: 'realism', name: 'Realism', description: 'Glitch FX', icon: 'https://win98icons.alexmeub.com/icons/png/display_properties-0.png', color: '#ff0000', category: 'XENO', action: () => createWindow('realism', 'EXTRACTIVIST REALISM', `<iframe src="https://extractivist-realism.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', icon: 'https://win98icons.alexmeub.com/icons/png/mouse-0.png', color: '#ff8800', category: 'XENO', action: () => createWindow('ravecat', 'RAVECAT SIMULATION', `<iframe src="https://ravecat-beta.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', icon: 'https://win98icons.alexmeub.com/icons/png/game_mine_1-0.png', color: '#8800ff', category: 'XENO', action: () => createWindow('psyballz', 'PSYBALLZ', `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    { id: 'sydra', name: 'Sydra', description: 'Genetics', icon: 'https://win98icons.alexmeub.com/icons/png/network_normal_two_pcs-0.png', color: '#00ff88', category: 'XENO', action: () => createWindow('sydra', 'SYDRA GENETICS', `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`) },
-    
-    { id: 'trash', name: 'Trash', description: 'Empty', icon: 'https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png', color: '#666666', category: 'SYSTEM', action: openTrashWindow },
+    { id: 'music', name: 'Music', description: 'Audio Lib', category: 'MEDIA', color: '#0f0', content: getMusicContent },
+    { id: 'gallery', name: 'Gallery', description: 'Visuals', category: 'MEDIA', color: '#0f0', content: `<iframe src="https://artviewer.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'contact', name: 'Profile', description: 'Player Info', category: 'SYSTEM', color: '#0f0', content: `
+        <div class="bios-profile">
+            <pre>
+=========================================
+  USER PROFILE: OBLINOF
+  CLASS: ARTIST/DESIGNER
+  RANK: SSS
+  ZONE: AUDIOVISUAL METAMODEL
+=========================================
+            </pre>
+            <a href="mailto:oblinof@gmail.com" target="_top" class="bios-link">> SEND MAIL</a><br><br>
+            <a href="https://linktr.ee/oblinof" target="_top" class="bios-link">> NEURAL LINK</a>
+        </div>
+    ` },
+    { id: 'datafall', name: 'Datafall', description: 'Water Sim', category: 'TOOLS', color: '#0ff', content: `<iframe src="/datafall.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', category: 'TOOLS', color: '#0ff', content: `<iframe src="/paintdelic.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'ambient', name: 'Ambient', description: 'Synth', category: 'TOOLS', color: '#0ff', content: `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'entity', name: 'Entity', description: 'Collab', category: 'TOOLS', color: '#0ff', content: `<iframe src="/entity_collab.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'wordarp', name: 'WordArp', description: 'Console', category: 'TOOLS', color: '#0ff', content: `<iframe src="/word_arp.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'realism', name: 'Realism', description: 'Glitch FX', category: 'XENO', color: '#f0f', content: `<iframe src="/extractivist_realism.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', category: 'XENO', color: '#f0f', content: `<iframe src="/ravecat.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'XENO', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'XENO', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'trash', name: 'Trash', description: 'Empty', category: 'SYSTEM', color: '#0f0', content: `<div class="bios-profile"><pre>RECYCLE BIN IS EMPTY.\nSYSTEM CLEAN.</pre></div>` },
 ];
 
-// --- Render ---
+// --- State ---
+let isBooting = true;
+let activeApp: { id: string, title: string, content: string | HTMLElement } | null = null;
 
-function render() {
+// --- DOM ---
+const root = document.getElementById('root')!;
+
+function renderStyle() {
     const style = document.createElement('style');
     style.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,700;1,700&display=swap');
-
         :root {
-            --ddr-yellow: #ffcc00;
-            --ddr-cyan: #00ffff;
-            --ddr-blue: #000033;
-            --ddr-pink: #ff00cc;
-            --ddr-dark: #000000;
-            --font-main: 'Chakra Petch', sans-serif;
+            --bg: #000000;
+            --text: #00ff00;
+            --text-dim: #008800;
+            --highlight: #00ff00;
+            --highlight-text: #000000;
+            --cyan: #00ffff;
+            --magenta: #ff00ff;
+            --yellow: #ffff00;
         }
-
         * { box-sizing: border-box; }
-
-        html {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
+        body, html {
             margin: 0; padding: 0;
-            background-color: var(--ddr-blue);
-            color: #fff;
-            font-family: var(--font-main);
-            overflow: hidden;
-            overflow-x: hidden;
-            height: 100vh;
-            height: 100dvh;
-            width: 100%;
-            max-width: 100vw;
-        }
-
-        /* --- ANIMATIONS --- */
-        @keyframes rainbow-text {
-            0% { color: #fff; text-shadow: 2px 2px 0 #000; }
-            25% { color: var(--ddr-cyan); text-shadow: 2px 2px 0 var(--ddr-pink); }
-            50% { color: var(--ddr-yellow); text-shadow: 2px 2px 0 #000; }
-            75% { color: var(--ddr-pink); text-shadow: 2px 2px 0 var(--ddr-cyan); }
-            100% { color: #fff; text-shadow: 2px 2px 0 #000; }
-        }
-
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 5px var(--ddr-cyan); }
-            50% { box-shadow: 0 0 15px var(--ddr-cyan), 0 0 30px var(--ddr-cyan); }
-            100% { box-shadow: 0 0 5px var(--ddr-cyan); }
-        }
-
-        @keyframes bgScroll {
-            0% { background-position: 0 0; }
-            100% { background-position: 50px 50px; }
-        }
-
-        /* --- BACKGROUND --- */
-        #root {
-            position: relative;
             width: 100%; height: 100%;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'VT323', 'Courier New', monospace;
+            font-size: 22px;
             overflow: hidden;
-            background: 
-                radial-gradient(circle at center, #001122 0%, #000 100%),
-                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 100% 100%, 30px 30px, 30px 30px;
-            animation: bgScroll 10s linear infinite;
+            text-transform: uppercase;
         }
-
-        /* --- LAYOUT --- */
-        .ddr-layout {
-            display: flex;
-            height: 100%;
-            width: 100%;
-            flex-direction: column;
-            position: relative;
-            z-index: 10;
-            background-color: #001122; /* Base OS color */
-            min-width: 0;
-            overflow: hidden;
+        #root {
+            width: 100%; height: 100%;
         }
-
-        /* Hardware texture overlay */
-        .ddr-layout::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="none"/><path d="M0 0L4 4M4 0L0 4" stroke="rgba(0,0,0,0.05)" stroke-width="1"/></svg>');
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        /* --- HEADER --- */
-        .ddr-header {
-            height: 50px;
-            background: #2a3b2d;
-            border-bottom: 2px solid #111;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.5);
-            flex-shrink: 0;
-            z-index: 200;
-            overflow: hidden;
-            min-width: 0;
-        }
-
-        .header-logo {
-            font-size: 24px;
-            font-weight: 900;
-            font-family: 'Courier New', Courier, monospace;
-            color: #00ff00;
-            text-shadow: 0 0 5px #00ff00;
-            background: #000;
-            padding: 5px 10px;
-            border: 2px inset #333;
-            border-radius: 3px;
-            min-width: 0;
-            flex-shrink: 1;
-        }
-        .header-logo span { display: block; animation: pulse-glow 2s infinite; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-
-        @keyframes pulse-glow {
-            0%, 100% { text-shadow: 0 0 5px #00ff00; color: #00ff00; }
-            50% { text-shadow: 0 0 15px #00ff00, 0 0 20px #00ff00; color: #ccffcc; }
-        }
-
-        .bpm-counter {
-            background: #000;
-            color: #ff9900;
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: 16px;
-            padding: 5px 10px;
-            border: 2px inset #333;
-            border-radius: 3px;
-            text-shadow: 0 0 5px #ff9900;
-        }
-
-        /* --- WORKSPACE --- */
-        .workspace {
-            flex-grow: 1;
-            position: relative;
-            overflow: hidden;
-            background: transparent;
-            box-shadow: inset 0 0 20px rgba(0,255,255,0.1);
-            min-height: 0;
-            min-width: 0;
-        }
-
-        /* Screen scanlines */
-        .workspace::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+        .crt {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none !important; z-index: 9999;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
             background-size: 100% 4px, 6px 100%;
-            pointer-events: none;
-            z-index: 150;
         }
-
-        /* --- APP SELECTOR (MAIN MENU) --- */
-        .tracklist-panel {
-            width: 100%;
-            height: 100%;
-            padding: 15px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            grid-auto-rows: 140px;
-            gap: 15px;
-            align-content: start;
-            transition: transform 0.4s ease, opacity 0.4s ease;
-            background: transparent;
-            min-width: 0;
+        .scanline {
+            width: 100%; height: 100px; z-index: 9998; position: absolute; pointer-events: none !important;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.2) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1; animation: scanline 6s linear infinite;
         }
-        
-        .ddr-layout.app-active .tracklist-panel {
-            transform: scale(1.1);
-            opacity: 0;
-            pointer-events: none;
-            display: none;
+        @keyframes scanline {
+            0% { top: -100px; }
+            100% { top: 100%; }
         }
-
-        /* --- ICON CARD (Hardware Button Style) --- */
-        .track-btn {
-            background: #d0d0d0;
-            border: 2px solid #fff;
-            border-bottom: 4px solid #888;
-            border-right: 4px solid #888;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.1s;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-            min-width: 0;
-        }
-
-        .track-btn:hover {
-            background: #e0e0e0;
-            transform: translateY(1px);
-            border-bottom: 3px solid #888;
-            border-right: 3px solid #888;
-        }
-
-        .track-btn:active {
-            transform: translateY(3px) translateX(1px);
-            border-bottom: 1px solid #888;
-            border-right: 1px solid #888;
-            box-shadow: 0 0 2px rgba(0,0,0,0.5);
-            background: #c0c0c0;
-        }
-
-        .track-icon-large {
-            font-size: 40px;
-            margin-bottom: 10px;
-            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));
-            color: #333;
-        }
-
-        .track-info { text-align: center; z-index: 2; width: 100%; padding: 0 5px; min-width: 0; }
-        .track-title { font-size: 12px; font-weight: 800; color: #000; text-transform: uppercase; margin-bottom: 2px; font-family: 'Courier New', Courier, monospace; background: rgba(255,255,255,0.5); border-radius: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; display: block; }
-        .track-desc { display: none; } /* Hide description for cleaner look */
-
-        /* --- WINDOWS LAYER (FULL SCREEN) --- */
-        .windows-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 300;
-            pointer-events: none;
-            display: none;
-        }
-        
-        .ddr-layout.app-active .windows-layer {
-            display: block;
-            pointer-events: auto;
-        }
-
-        .ddr-window {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #001122;
-            display: flex;
-            flex-direction: column;
-            animation: appOpen 0.2s ease-out;
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        @keyframes appOpen {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .ddr-window.closing {
-            animation: appClose 0.2s forwards;
-        }
-        @keyframes appClose {
-            to { transform: scale(1.05); opacity: 0; }
-        }
-
-        /* Window Header - Hardware Style */
-        .window-header {
-            height: 40px;
-            background: #4a5a4d;
-            border-bottom: 2px solid #2a3b2d;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            flex-shrink: 0;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
-            overflow: hidden;
-            min-width: 0;
-        }
-
-        .header-title-box { display: flex; align-items: center; gap: 10px; overflow: hidden; min-width: 0; flex-shrink: 1; }
-        .header-label { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; flex-shrink: 0; }
-        .header-name { font-size: 14px; font-weight: bold; color: #fff; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; text-shadow: 1px 1px 0 #000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; display: block; }
-
-        .ctrl-btn {
-            background: #cc3333;
-            border: 2px solid #ff6666;
-            border-bottom: 3px solid #660000;
-            border-right: 3px solid #660000;
-            color: #fff;
-            padding: 2px 10px;
-            font-weight: bold;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            text-shadow: 1px 1px 0 #000;
-        }
-        .ctrl-btn:active {
-            transform: translateY(2px) translateX(1px);
-            border-bottom: 1px solid #660000;
-            border-right: 1px solid #660000;
-        }
-
-        .difficulty-bar {
-            height: 15px;
-            background: #000;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            border-bottom: 2px solid #333;
-            padding: 0 5px;
-        }
-        .diff-tag { font-size: 10px; color: #00ff00; font-family: 'Courier New', Courier, monospace; margin-right: 10px;}
-        .diff-stripes { font-size: 10px; color: #00ff00; letter-spacing: 2px; white-space: nowrap; font-family: 'Courier New', Courier, monospace;}
-
-        .window-body {
-            flex-grow: 1;
-            position: relative;
-            background: #000;
-            overflow: hidden;
-            min-height: 0;
-            min-width: 0;
-        }
-        .window-body iframe { width: 100%; height: 100%; border: none; filter: contrast(1.2) brightness(0.9); }
-
-        /* --- SCROLLBAR --- */
-        .custom-scrollbar {
-            overflow-y: auto !important;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 16px;
-            background: #dfdfdf;
-            border-left: 1px solid #fff;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-top: 2px solid #fff;
-            border-left: 2px solid #fff;
-            border-bottom: 2px solid #000;
-            border-right: 2px solid #000;
-        }
-        .custom-scrollbar::-webkit-scrollbar-button {
-            display: block;
-            height: 16px;
-            background: #c0c0c0;
-            border-top: 2px solid #fff;
-            border-left: 2px solid #fff;
-            border-bottom: 2px solid #000;
-            border-right: 2px solid #000;
-        }
-
-        /* --- APP SPECIFIC CONTENT --- */
-        
-        /* Profile / Player Info */
-        .profile-layout {
-            height: 100%; width: 100%;
-            display: flex; align-items: center; justify-content: center;
-            background: #001122;
-            padding: 10px;
-        }
-        .profile-card {
-            width: 100%; height: 100%;
-            background: #000;
-            border: 2px solid #00ff00;
-            padding: 15px;
+        .container {
+            width: 100%; height: 100%; position: relative; z-index: 10;
             display: flex; flex-direction: column;
-            overflow-y: auto;
         }
+        
+        /* Boot Screen */
+        .boot-screen { padding: 20px; white-space: pre-wrap; word-wrap: break-word; }
+        .cursor { display: inline-block; width: 12px; height: 22px; background: var(--text); animation: blink 1s step-end infinite; vertical-align: bottom; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; border-bottom: 1px dashed #00ff00; padding-bottom: 15px; }
-        .avatar-placeholder {
-            width: 60px; height: 60px; background: #003300; border: 1px solid #00ff00;
-            display: flex; align-items: center; justify-content: center; font-size: 30px; color: #00ff00;
+        /* Main Menu */
+        .main-menu {
+            padding: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto;
+            animation: turn-on 0.5s ease-out;
         }
-        .profile-names h2 { font-size: 24px; margin: 0; line-height: 1; color: #00ff00; font-family: 'Courier New', Courier, monospace; text-shadow: 0 0 5px #00ff00; }
-        .subtitle { color: #aaffaa; font-size: 12px; font-family: 'Courier New', Courier, monospace; }
-
-        .stats-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; flex-grow: 1; }
-        .stat-row { background: #001100; padding: 8px; border: 1px solid #003300; display: flex; justify-content: space-between; align-items: center; }
-        .stat-label { font-size: 12px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
-        .stat-val { font-size: 14px; color: #00ff00; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
-        .text-yellow { color: #ffcc00; text-shadow: 0 0 5px #ffcc00; }
-
-        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
-        .action-btn {
-            padding: 12px; text-align: center;
-            background: #003300; color: #00ff00; font-weight: bold; text-decoration: none;
-            border: 1px solid #00ff00;
-            font-family: 'Courier New', Courier, monospace;
+        @keyframes turn-on {
+            0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(3); }
+            50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
+            100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
         }
-        .action-btn:active { background: #00ff00; color: #000; }
-
-        /* Music Grid */
-        .music-grid {
-            display: grid; grid-template-columns: 1fr;
-            gap: 10px; padding: 10px;
-            background: #001122;
+        .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .category { margin-bottom: 20px; }
+        .category-title { color: var(--yellow); border-bottom: 1px solid var(--text-dim); margin-bottom: 10px; padding-bottom: 5px; }
+        .bios-btn {
+            cursor: pointer; padding: 5px; transition: all 0.1s; display: block;
+            color: var(--text); text-decoration: none;
+            background: transparent; border: none; text-align: left; font-family: inherit; font-size: inherit; width: 100%;
         }
-        .music-item {
-            background: #000; border: 1px solid #00ff00; padding: 10px;
-            display: flex; align-items: center; gap: 15px;
-            cursor: pointer;
+        .bios-btn:hover { background: var(--highlight); color: var(--highlight-text); }
+        .bios-btn .desc { color: var(--text-dim); font-size: 18px; margin-left: 15px; }
+        .bios-btn:hover .desc { color: var(--highlight-text); }
+        
+        /* Fullscreen App */
+        .fullscreen-app {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; background: #000; z-index: 100;
+            animation: crt-flicker 0.1s infinite;
         }
-        .music-item:active { background: #003300; }
-        .disc-icon { font-size: 30px; color: #00ff00; }
-        .spinning { animation: spin 2s linear infinite; }
-        .music-info { text-align: left; }
-        .music-title { font-weight: bold; color: #00ff00; font-family: 'Courier New', Courier, monospace; font-size: 14px; margin-bottom: 2px; }
-        .music-artist { font-size: 10px; color: #aaffaa; font-family: 'Courier New', Courier, monospace; }
-        .special-item { border-color: #ffcc00; }
-        .special-item .music-title { color: #ffcc00; }
-        .special-item .disc-icon { color: #ffcc00; }
+        @keyframes crt-flicker {
+            0% { opacity: 0.98; }
+            50% { opacity: 1; }
+            100% { opacity: 0.99; }
+        }
+        .app-topbar {
+            background: var(--highlight); color: var(--highlight-text);
+            padding: 5px 15px; display: flex; justify-content: space-between; align-items: center;
+            font-weight: bold; flex-shrink: 0;
+        }
+        .btn-exit {
+            background: #000; color: var(--highlight); border: 1px solid #000;
+            font-family: inherit; font-size: 18px; cursor: pointer; padding: 2px 10px;
+            text-transform: uppercase;
+        }
+        .btn-exit:hover { background: var(--text); color: #000; }
+        .app-content { flex-grow: 1; position: relative; overflow: auto; }
+        .app-content iframe { width: 100%; height: 100%; border: none; }
+        
+        /* Misc */
+        .bios-profile { padding: 20px; }
+        .bios-link { color: var(--cyan); text-decoration: none; cursor: pointer; }
+        .bios-link:hover { background: var(--cyan); color: #000; }
+        .music-menu { padding: 20px; }
 
-        /* Empty State */
-        .empty-state { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #00ff00; background: #000; font-family: 'Courier New', Courier, monospace; }
-
-        /* --- MOBILE --- */
-        @media (max-width: 768px) {
-            .tracklist-panel { 
-                grid-template-columns: repeat(3, 1fr); 
-                grid-auto-rows: minmax(100px, 28vw);
-                gap: 10px; 
-                padding: 10px; 
-            }
-            .track-btn { height: auto; border-width: 2px; border-bottom-width: 4px; border-right-width: 4px; border-radius: 8px; }
-            .track-icon-large { width: 40px !important; height: 40px !important; font-size: 40px !important; margin-bottom: 5px !important; display: flex; align-items: center; justify-content: center; }
-            .track-title { font-size: clamp(10px, 3.5vw, 14px); padding: 2px; border-radius: 2px; }
-            .header-logo { font-size: clamp(16px, 5vw, 24px); padding: 5px 10px; overflow: hidden; }
-            .header-logo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .bpm-counter { font-size: clamp(12px, 4vw, 16px); padding: 5px 10px; border-width: 2px; border-radius: 3px; flex-shrink: 0; }
-            .ddr-header { height: 50px; padding: 0 10px; }
-            .window-header { height: 40px; padding: 0 10px; border-bottom-width: 2px; }
-            .header-name { font-size: clamp(12px, 4vw, 16px); }
-            .ctrl-btn { padding: 2px 10px; font-size: clamp(10px, 3.5vw, 14px); border-width: 2px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 4px; }
-            .diff-tag { font-size: 10px; margin-right: 5px; }
-            .diff-stripes { font-size: 10px; letter-spacing: 2px; }
-            .difficulty-bar { height: 15px; border-bottom-width: 2px; padding: 0 5px; }
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+            font-size: 18px;
         }
     `;
     document.head.appendChild(style);
+}
 
-    // 2. DOM Structure
-    root.innerHTML = '';
+function launchApp(id: string, title: string, content: string | HTMLElement | (() => HTMLElement)) {
+    let resolvedContent: string | HTMLElement;
+    if (typeof content === 'function') {
+        resolvedContent = content();
+    } else {
+        resolvedContent = content;
+    }
+    activeApp = { id, title, content: resolvedContent };
+    renderUI();
+}
+
+function closeApp() {
+    activeApp = null;
+    renderUI();
+}
+
+function renderBootScreen() {
+    const bootLines = [
+        "OBLINOF BIOS v2.4.1",
+        "Copyright (C) 2026, Oblinof Systems Inc.",
+        "",
+        "CPU: Quantum Processor 9000 at 8.4 GHz",
+        "Memory Test : 64000000K OK",
+        "",
+        "Initializing USB Controllers .. Done.",
+        "Loading Neural Interface ...... Done.",
+        "Establishing Uplink ........... Done.",
+        "",
+        "Booting OS...",
+    ];
+
+    const container = document.createElement('div');
+    container.className = 'boot-screen';
     
-    layout = document.createElement('div');
-    layout.className = 'ddr-layout';
+    let currentLine = 0;
+    
+    const textNode = document.createElement('span');
+    container.appendChild(textNode);
+    
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    container.appendChild(cursor);
 
-    // Header
-    layout.innerHTML = `
-        <div class="ddr-header">
-            <div class="header-logo"><span>OBLINOF SYSTEM</span></div>
-            <div class="bpm-counter">READY</div>
-        </div>
+    const interval = setInterval(() => {
+        if (currentLine < bootLines.length) {
+            textNode.textContent += bootLines[currentLine] + '\n';
+            currentLine++;
+        } else {
+            clearInterval(interval);
+            setTimeout(() => {
+                isBooting = false;
+                renderUI();
+            }, 500);
+        }
+    }, 150);
+
+    return container;
+}
+
+function renderMainMenu() {
+    const container = document.createElement('div');
+    container.className = 'main-menu';
+    
+    const header = document.createElement('div');
+    header.className = 'header';
+    header.innerHTML = `
+        <div>==================================================</div>
+        <div>OBLINOF OS - MAIN MENU</div>
+        <div>==================================================</div>
     `;
+    container.appendChild(header);
 
-    // Workspace
-    workspace = document.createElement('div');
-    workspace.className = 'workspace';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    const categories = ['SYSTEM', 'MEDIA', 'TOOLS', 'XENO'];
     
-    // Windows Container (Full Overlay)
-    windowsContainer = document.createElement('div');
-    windowsContainer.className = 'windows-layer';
-    
-    // Main Menu (Tracklist)
-    tracklistPanel = document.createElement('div');
-    tracklistPanel.className = 'tracklist-panel custom-scrollbar';
+    categories.forEach(cat => {
+        const catApps = apps.filter(a => a.category === cat);
+        if (catApps.length === 0) return;
 
-    apps.forEach(app => {
-        const btn = document.createElement('div');
-        btn.className = 'track-btn';
-        // Add color hint to border
-        btn.style.borderColor = app.color;
+        const catDiv = document.createElement('div');
+        catDiv.className = 'category';
+        catDiv.innerHTML = `<div class="category-title">[ ${cat} ]</div>`;
         
-        const iconHtml = app.icon.startsWith('http') 
-            ? `<img src="${app.icon}" class="track-icon-large" alt="${app.name}" style="width: 40px; height: 40px; image-rendering: pixelated; margin-bottom: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));" />`
-            : `<div class="track-icon-large" style="text-shadow: 0 0 15px ${app.color}">${app.icon}</div>`;
-
-        btn.innerHTML = `
-            ${iconHtml}
-            <div class="track-info">
-                <div class="track-title">${app.name}</div>
-                <span class="track-desc" style="color:${app.color}">${app.description}</span>
-            </div>
-        `;
+        catApps.forEach(app => {
+            const btn = document.createElement('button');
+            btn.className = 'bios-btn';
+            btn.innerHTML = `> ${app.name.padEnd(12, ' ')} <span class="desc">// ${app.description}</span>`;
+            btn.onclick = () => launchApp(app.id, app.name, app.content);
+            catDiv.appendChild(btn);
+        });
         
-        // Add specific hover color logic via inline event for simplicity in this generated code
-        btn.onmouseenter = () => { btn.style.background = '#e0e0e0'; };
-        btn.onmouseleave = () => { btn.style.background = '#d0d0d0'; };
-
-        btn.onclick = app.action;
-        tracklistPanel.appendChild(btn);
+        grid.appendChild(catDiv);
     });
 
-    workspace.appendChild(tracklistPanel);
+    container.appendChild(grid);
+    
+    const footer = document.createElement('div');
+    footer.style.marginTop = 'auto';
+    footer.style.paddingTop = '20px';
+    footer.style.color = 'var(--text-dim)';
+    footer.innerHTML = `> USE MOUSE OR TOUCH TO EXECUTE PROGRAM.<br>> SYSTEM READY. <span class="cursor"></span>`;
+    container.appendChild(footer);
 
-    layout.appendChild(workspace);
-    layout.appendChild(windowsContainer);
-    root.appendChild(layout);
+    return container;
+}
+
+function renderFullscreenApp() {
+    if (!activeApp) return document.createElement('div');
+
+    const container = document.createElement('div');
+    container.className = 'fullscreen-app';
+
+    const topbar = document.createElement('div');
+    topbar.className = 'app-topbar';
+    topbar.innerHTML = `
+        <span>RUNNING: ${activeApp.title}.EXE</span>
+    `;
+    
+    const exitBtn = document.createElement('button');
+    exitBtn.className = 'btn-exit';
+    exitBtn.textContent = '[X] EXIT';
+    exitBtn.onclick = closeApp;
+    topbar.appendChild(exitBtn);
+
+    const content = document.createElement('div');
+    content.className = 'app-content custom-scrollbar';
+    
+    if (typeof activeApp.content === 'string') {
+        content.innerHTML = activeApp.content;
+    } else {
+        content.appendChild(activeApp.content);
+    }
+
+    container.appendChild(topbar);
+    container.appendChild(content);
+
+    return container;
+}
+
+function renderUI() {
+    root.innerHTML = '';
+    
+    // Ensure CRT and scanline are only added once
+    if (!document.querySelector('.crt')) {
+        const crt = document.createElement('div');
+        crt.className = 'crt';
+        document.body.appendChild(crt);
+        
+        const scanline = document.createElement('div');
+        scanline.className = 'scanline';
+        document.body.appendChild(scanline);
+    }
+
+    const container = document.createElement('div');
+    container.className = 'container';
+
+    if (isBooting) {
+        container.appendChild(renderBootScreen());
+    } else if (activeApp) {
+        container.appendChild(renderFullscreenApp());
+    } else {
+        container.appendChild(renderMainMenu());
+    }
+
+    root.appendChild(container);
 }
 
 function init() {
-    render();
+    renderStyle();
+    renderUI();
 }
 
 init();
