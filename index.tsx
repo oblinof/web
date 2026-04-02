@@ -94,7 +94,7 @@ function renderStyle() {
             --magenta: #ff00ff;
             --yellow: #ffff00;
         }
-        * { box-sizing: border-box; }
+        *, *::before, *::after { box-sizing: border-box; }
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
