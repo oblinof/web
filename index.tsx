@@ -152,7 +152,7 @@ function renderStyle() {
         .header { text-align: center; margin-bottom: 20px; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 10px; max-width: 100%; overflow: hidden; min-width: 0; }
         .grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
             gap: 20px; 
             min-width: 0; width: 100%; 
         }
