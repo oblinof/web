@@ -97,6 +97,7 @@ function renderStyle() {
         *, *::before, *::after { box-sizing: border-box; }
         html {
             scroll-behavior: smooth;
+            font-size: 16px;
         }
         body, html {
             margin: 0; padding: 0;
@@ -104,79 +105,85 @@ function renderStyle() {
             background-color: var(--bg);
             color: var(--text);
             font-family: 'VT323', 'Courier New', monospace;
-            font-size: 16px; /* Base font size for mobile */
-            overflow: hidden;
+            overflow-x: hidden;
             text-transform: uppercase;
-            touch-action: manipulation; /* Eliminate 300ms tap delay */
+            touch-action: manipulation;
         }
-        #root {
-            width: 100%; height: 100%;
-        }
-        .crt {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none !important; z-index: 9999;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 6px 100%;
-        }
-        .scanline {
-            width: 100%; height: 100px; z-index: 9998; position: absolute; pointer-events: none !important;
-            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.2) 50%, rgba(0,0,0,0) 100%);
-            opacity: 0.1; animation: scanline 6s linear infinite;
-        }
-        @keyframes scanline {
-            0% { top: -100px; }
-            100% { top: 100%; }
-        }
+        #root { width: 100%; height: 100%; }
+        
+        /* Layout Mobile-First */
         .container {
-            width: 100%; height: 100%; position: relative; z-index: 10;
-            display: flex; flex-direction: column;
             max-width: 1200px;
             margin: 0 auto;
+            padding: 0 1rem;
+            width: 100%; height: 100%; position: relative; z-index: 10;
+            display: flex; flex-direction: column;
+        }
+
+        .main-menu {
+            padding: 1.5rem 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;
+        }
+
+        .header { 
+            text-align: center; margin-bottom: 2rem; color: var(--cyan); 
+            border-bottom: 2px dashed var(--cyan); padding-bottom: 1rem; 
+            font-size: clamp(1.5rem, 5vw, 2.5rem); 
+        }
+
+        /* Grid Responsivo Automático */
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+            gap: 2rem; 
+            width: 100%;
+        }
+
+        .category { margin-bottom: 1.5rem; }
+        .category-title { 
+            color: var(--yellow); 
+            border-bottom: 1px solid var(--text-dim); 
+            margin-bottom: 1rem; 
+            padding-bottom: 0.5rem; 
+            font-size: clamp(1.2rem, 4vw, 1.5rem); 
+            font-weight: normal;
+        }
+
+        /* Botones Mobile-Friendly */
+        .bios-btn {
+            cursor: pointer; 
+            padding: 0.5rem 0; 
+            min-height: 44px; 
+            transition: all 0.1s; display: block;
+            color: var(--highlight); text-decoration: none;
+            background: transparent; border: none; text-align: left; 
+            font-family: inherit; 
+            font-size: clamp(1.1rem, 4vw, 1.4rem); 
+            width: 100%;
+            line-height: 1.2;
+        }
+        .bios-btn:hover, .bios-btn:active, .bios-btn:focus { 
+            background: var(--highlight); color: var(--highlight-text); outline: none;
         }
         
+        .bios-btn .desc { 
+            color: var(--text-dim); 
+            font-size: clamp(0.9rem, 3vw, 1.1rem); 
+            display: block; margin-top: 0.3rem; margin-left: 1.2rem; 
+        }
+        .bios-btn:hover .desc, .bios-btn:active .desc, .bios-btn:focus .desc { 
+            color: var(--highlight-text); 
+        }
+
         /* Boot Screen */
-        .boot-screen { padding: 1rem; white-space: pre-wrap; word-wrap: break-word; font-size: 1.1rem; }
+        .boot-screen { padding: 1rem 0; white-space: pre-wrap; word-wrap: break-word; font-size: clamp(1rem, 4vw, 1.2rem); }
         .cursor { display: inline-block; width: 10px; height: 1.2em; background: var(--text); animation: blink 1s step-end infinite; vertical-align: bottom; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-        /* Main Menu */
-        .main-menu {
-            padding: 1rem; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;
-            animation: turn-on 0.5s ease-out;
-        }
         @keyframes turn-on {
             0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(3); }
             50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
             100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
         }
-        .header { 
-            text-align: center; margin-bottom: 1.5rem; color: var(--cyan); 
-            border-bottom: 2px dashed var(--cyan); padding-bottom: 0.5rem; 
-            max-width: 100%; overflow: hidden; 
-            font-size: clamp(1.2rem, 5vw, 2rem); /* Fluid typography */
-        }
-        .grid { 
-            display: grid; 
-            grid-template-columns: 1fr; /* Mobile first: 1 column */
-            gap: 1.5rem; 
-        }
-        .category { margin-bottom: 1.5rem; }
-        .category-title { color: var(--yellow); border-bottom: 1px solid var(--text-dim); margin-bottom: 0.8rem; padding-bottom: 0.3rem; font-size: 1.2rem; }
-        .bios-btn {
-            cursor: pointer; 
-            padding: 12px 10px; /* Larger touch target */
-            min-height: 44px; /* Minimum touch target height */
-            transition: all 0.1s; display: block;
-            color: var(--text); text-decoration: none;
-            background: transparent; border: none; text-align: left; font-family: inherit; font-size: 1.1rem; width: 100%;
-        }
-        .bios-btn:hover, .bios-btn:active { background: var(--highlight); color: var(--highlight-text); }
-        .bios-btn .desc { 
-            color: var(--text-dim); font-size: 0.9rem; 
-            display: block; margin-top: 5px; /* Block on mobile */
-        }
-        .bios-btn:hover .desc, .bios-btn:active .desc { color: var(--highlight-text); }
-        
+
         /* Fullscreen App */
         .fullscreen-app {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -192,36 +199,44 @@ function renderStyle() {
             background: var(--highlight); color: var(--highlight-text);
             padding: 5px 15px; display: flex; justify-content: space-between; align-items: center;
             font-weight: bold; flex-shrink: 0;
-            min-height: 44px; /* Touch target */
+            min-height: 44px; 
         }
         .btn-exit {
             background: #000; color: var(--highlight); border: 1px solid #000;
             font-family: inherit; font-size: 1rem; cursor: pointer; padding: 5px 15px;
-            text-transform: uppercase; min-height: 36px;
+            text-transform: uppercase; min-height: 44px;
         }
         .btn-exit:hover, .btn-exit:active { background: var(--text); color: #000; }
         .app-content { flex-grow: 1; position: relative; overflow: hidden; }
         .app-content iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: block; }
         
         /* Misc */
-        .bios-profile { padding: 1rem; max-width: 100%; overflow: hidden; }
+        .bios-profile { padding: 1rem 0; max-width: 100%; overflow: hidden; }
         .bios-link { 
             color: var(--cyan); text-decoration: none; cursor: pointer; 
             display: inline-block; word-break: break-all;
-            padding: 10px 0; min-height: 44px; /* Touch target */
+            padding: 10px 0; min-height: 44px; 
         }
         .bios-link:hover, .bios-link:active { background: var(--cyan); color: #000; }
-        .music-menu { padding: 1rem; }
+        .music-menu { padding: 1rem 0; }
         pre { white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-x: hidden; margin: 0; font-family: inherit; }
         .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; }
 
-        /* Tablet & Desktop overrides */
-        @media (min-width: 850px) {
-            body, html { font-size: 20px; }
-            .grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-            .bios-btn .desc { display: inline; margin-left: 15px; margin-top: 0; font-size: 18px; }
-            .boot-screen { padding: 20px; }
-            .main-menu { padding: 20px; }
+        /* CRT Effects */
+        .crt {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none !important; z-index: 9999;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+        }
+        .scanline {
+            width: 100%; height: 100px; z-index: 9998; position: absolute; pointer-events: none !important;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.2) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1; animation: scanline 6s linear infinite;
+        }
+        @keyframes scanline {
+            0% { top: -100px; }
+            100% { top: 100%; }
         }
     `;
     document.head.appendChild(style);
@@ -315,7 +330,7 @@ function renderMainMenu() {
         catApps.forEach(app => {
             const btn = document.createElement('button');
             btn.className = 'bios-btn';
-            btn.innerHTML = `> ${app.name.padEnd(12, ' ')} <span class="desc">// ${app.description}</span>`;
+            btn.innerHTML = `> ${app.name} <span class="desc">// ${app.description}</span>`;
             btn.onclick = () => launchApp(app.id, app.name, app.content);
             catDiv.appendChild(btn);
         });
