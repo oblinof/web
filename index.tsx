@@ -69,14 +69,14 @@ const apps: AppDefinition[] = [
     { id: 'wordarp', name: 'WordArp', description: 'Console', category: 'TOOLS', color: '#0ff', content: `<iframe src="/word_arp.html" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'realism', name: 'Realism', description: 'Glitch FX', category: 'XENO', color: '#f0f', content: `<iframe src="/extractivist_realism.html" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'ravecat', name: 'Ravecat', description: '3D Sim', category: 'XENO', color: '#f0f', content: `<iframe src="/ravecat.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'XENO', color: '#f0f', content: '', url: 'https://psyballs.vercel.app/' },
-    { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'XENO', color: '#f0f', content: '', url: 'https://sydra-byhq.vercel.app/' },
+    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'XENO', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'XENO', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'trash', name: 'Trash', description: 'Empty', category: 'SYSTEM', color: '#0f0', content: `<div class="bios-profile"><pre>RECYCLE BIN IS EMPTY.\nSYSTEM CLEAN.</pre></div>` },
 ];
 
 // --- State ---
 let isBooting = true;
-let activeApp: { id: string, title: string, content: string | HTMLElement, url?: string } | null = null;
+let activeApp: { id: string, title: string, content: string | HTMLElement } | null = null;
 
 // --- DOM ---
 const root = document.getElementById('root')!;
@@ -199,11 +199,7 @@ function renderStyle() {
     document.head.appendChild(style);
 }
 
-function launchApp(id: string, title: string, content: string | HTMLElement | (() => HTMLElement), url?: string) {
-    if (url) {
-        window.open(url, '_blank');
-        return;
-    }
+function launchApp(id: string, title: string, content: string | HTMLElement | (() => HTMLElement)) {
     let resolvedContent: string | HTMLElement;
     if (typeof content === 'function') {
         resolvedContent = content();
@@ -292,7 +288,7 @@ function renderMainMenu() {
             const btn = document.createElement('button');
             btn.className = 'bios-btn';
             btn.innerHTML = `> ${app.name.padEnd(12, ' ')} <span class="desc">// ${app.description}</span>`;
-            btn.onclick = () => launchApp(app.id, app.name, app.content, app.url);
+            btn.onclick = () => launchApp(app.id, app.name, app.content);
             catDiv.appendChild(btn);
         });
         
