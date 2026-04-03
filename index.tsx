@@ -95,148 +95,84 @@ function renderStyle() {
             --yellow: #ffff00;
         }
         *, *::before, *::after { box-sizing: border-box; }
-        html {
-            scroll-behavior: smooth;
-            font-size: 16px;
-        }
+        html { scroll-behavior: smooth; font-size: 16px; }
         body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: var(--bg);
-            color: var(--text);
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: var(--text);
             font-family: 'VT323', 'Courier New', monospace;
-            overflow-x: hidden;
-            text-transform: uppercase;
+            overflow-x: hidden; text-transform: uppercase;
             touch-action: manipulation;
         }
         #root { width: 100%; height: 100%; }
         
-        /* Layout Mobile-First */
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
+            max-width: 1200px; margin: 0 auto; padding: 0 1rem;
             width: 100%; height: 100%; position: relative; z-index: 10;
             display: flex; flex-direction: column;
         }
-
-        .main-menu {
-            padding: 1.5rem 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden;
-        }
-
-        .header { 
-            text-align: center; margin-bottom: 2rem; color: var(--cyan); 
-            border-bottom: 2px dashed var(--cyan); padding-bottom: 1rem; 
-            font-size: clamp(1.5rem, 5vw, 2.5rem); 
-        }
-
-        /* Grid Responsivo Automático */
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 2rem; 
-            width: 100%;
-        }
-
-        .category { margin-bottom: 1.5rem; }
-        .category-title { 
-            color: var(--yellow); 
-            border-bottom: 1px solid var(--text-dim); 
-            margin-bottom: 1rem; 
-            padding-bottom: 0.5rem; 
-            font-size: clamp(1.2rem, 4vw, 1.5rem); 
-            font-weight: normal;
-        }
-
-        /* Botones Mobile-Friendly */
-        .bios-btn {
-            cursor: pointer; 
-            padding: 0.5rem 0; 
-            min-height: 44px; 
-            transition: all 0.1s; display: block;
-            color: var(--highlight); text-decoration: none;
-            background: transparent; border: none; text-align: left; 
-            font-family: inherit; 
-            font-size: clamp(1.1rem, 4vw, 1.4rem); 
-            width: 100%;
-            line-height: 1.2;
-        }
-        .bios-btn:hover, .bios-btn:active, .bios-btn:focus { 
-            background: var(--highlight); color: var(--highlight-text); outline: none;
-        }
+        .main-menu { padding: 1.5rem 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; overflow-x: hidden; }
+        .header { text-align: center; margin-bottom: 2rem; color: var(--cyan); border-bottom: 2px dashed var(--cyan); padding-bottom: 1rem; font-size: 2.5rem; }
         
-        .bios-btn .desc { 
-            color: var(--text-dim); 
-            font-size: clamp(0.9rem, 3vw, 1.1rem); 
-            display: block; margin-top: 0.3rem; margin-left: 1.2rem; 
+        /* Default Grid (Desktop) */
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; width: 100%; }
+        .category { margin-bottom: 1.5rem; }
+        .category-title { color: var(--yellow); border-bottom: 1px solid var(--text-dim); margin-bottom: 1rem; padding-bottom: 0.5rem; font-size: 1.5rem; font-weight: normal; }
+        
+        .bios-btn {
+            cursor: pointer; padding: 0.5rem 0; min-height: 44px; transition: all 0.1s; display: block;
+            color: var(--highlight); text-decoration: none; background: transparent; border: none; text-align: left; 
+            font-family: inherit; font-size: 1.4rem; width: 100%; line-height: 1.2;
         }
-        .bios-btn:hover .desc, .bios-btn:active .desc, .bios-btn:focus .desc { 
-            color: var(--highlight-text); 
-        }
-
-        /* Boot Screen */
-        .boot-screen { padding: 1rem 0; white-space: pre-wrap; word-wrap: break-word; font-size: clamp(1rem, 4vw, 1.2rem); }
+        .bios-btn:hover, .bios-btn:active, .bios-btn:focus { background: var(--highlight); color: var(--highlight-text); outline: none; }
+        .bios-btn .desc { color: var(--text-dim); font-size: 1.1rem; display: block; margin-top: 0.3rem; margin-left: 1.2rem; }
+        .bios-btn:hover .desc, .bios-btn:active .desc, .bios-btn:focus .desc { color: var(--highlight-text); }
+        
+        .boot-screen { padding: 1rem 0; white-space: pre-wrap; word-wrap: break-word; font-size: 1.2rem; }
         .cursor { display: inline-block; width: 10px; height: 1.2em; background: var(--text); animation: blink 1s step-end infinite; vertical-align: bottom; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes turn-on {
-            0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(3); }
-            50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); }
-            100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); }
-        }
-
-        /* Fullscreen App */
-        .fullscreen-app {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; background: #000; z-index: 100;
-            animation: crt-flicker 0.1s infinite;
-        }
-        @keyframes crt-flicker {
-            0% { opacity: 0.98; }
-            50% { opacity: 1; }
-            100% { opacity: 0.99; }
-        }
-        .app-topbar {
-            background: var(--highlight); color: var(--highlight-text);
-            padding: 5px 15px; display: flex; justify-content: space-between; align-items: center;
-            font-weight: bold; flex-shrink: 0;
-            min-height: 44px; 
-        }
-        .btn-exit {
-            background: #000; color: var(--highlight); border: 1px solid #000;
-            font-family: inherit; font-size: 1rem; cursor: pointer; padding: 5px 15px;
-            text-transform: uppercase; min-height: 44px;
-        }
+        @keyframes turn-on { 0% { transform: scale(1, 0.01); opacity: 0; filter: brightness(3); } 50% { transform: scale(1, 1); opacity: 1; filter: brightness(1.5); } 100% { transform: scale(1, 1); opacity: 1; filter: brightness(1); } }
+        
+        .fullscreen-app { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; background: #000; z-index: 100; animation: crt-flicker 0.1s infinite; }
+        @keyframes crt-flicker { 0% { opacity: 0.98; } 50% { opacity: 1; } 100% { opacity: 0.99; } }
+        .app-topbar { background: var(--highlight); color: var(--highlight-text); padding: 5px 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; flex-shrink: 0; min-height: 44px; }
+        .btn-exit { background: #000; color: var(--highlight); border: 1px solid #000; font-family: inherit; font-size: 1rem; cursor: pointer; padding: 5px 15px; text-transform: uppercase; min-height: 44px; }
         .btn-exit:hover, .btn-exit:active { background: var(--text); color: #000; }
         .app-content { flex-grow: 1; position: relative; overflow: hidden; }
         .app-content iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: block; }
         
-        /* Misc */
         .bios-profile { padding: 1rem 0; max-width: 100%; overflow: hidden; }
-        .bios-link { 
-            color: var(--cyan); text-decoration: none; cursor: pointer; 
-            display: inline-block; word-break: break-all;
-            padding: 10px 0; min-height: 44px; 
-        }
+        .bios-link { color: var(--cyan); text-decoration: none; cursor: pointer; display: inline-block; word-break: break-all; padding: 10px 0; min-height: 44px; }
         .bios-link:hover, .bios-link:active { background: var(--cyan); color: #000; }
         .music-menu { padding: 1rem 0; }
         pre { white-space: pre-wrap; word-wrap: break-word; max-width: 100%; overflow-x: hidden; margin: 0; font-family: inherit; }
         .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; }
+        
+        .crt { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none !important; z-index: 9999; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 4px, 6px 100%; }
+        .scanline { width: 100%; height: 100px; z-index: 9998; position: absolute; pointer-events: none !important; background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.2) 50%, rgba(0,0,0,0) 100%); opacity: 0.1; animation: scanline 6s linear infinite; }
+        @keyframes scanline { 0% { top: -100px; } 100% { top: 100%; } }
 
-        /* CRT Effects */
-        .crt {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none !important; z-index: 9999;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 6px 100%;
-        }
-        .scanline {
-            width: 100%; height: 100px; z-index: 9998; position: absolute; pointer-events: none !important;
-            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.2) 50%, rgba(0,0,0,0) 100%);
-            opacity: 0.1; animation: scanline 6s linear infinite;
-        }
-        @keyframes scanline {
-            0% { top: -100px; }
-            100% { top: 100%; }
+        /* ==========================================================================
+           ULTIMATE MOBILE OVERRIDE (Bypasses Iframe Masking)
+           Using max-device-width targets the physical screen, NOT the iframe width.
+           Using vw units ensures perfect scaling even if the iframe is 980px wide.
+           ========================================================================== */
+        @media (max-device-width: 768px) {
+            .grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8vw !important;
+            }
+            .container { padding: 0 4vw !important; }
+            .header { font-size: 8vw !important; margin-bottom: 6vw !important; border-bottom-width: 0.5vw !important; padding-bottom: 3vw !important; }
+            .category { margin-bottom: 8vw !important; }
+            .category-title { font-size: 6.5vw !important; margin-bottom: 4vw !important; border-bottom-width: 0.3vw !important; padding-bottom: 2vw !important; }
+            .bios-btn { font-size: 6vw !important; padding: 3vw 0 !important; min-height: 12vw !important; }
+            .bios-btn .desc { font-size: 4.5vw !important; margin-top: 1.5vw !important; margin-left: 4vw !important; }
+            .boot-screen, .bios-profile, .music-menu { font-size: 5vw !important; padding: 4vw 0 !important; }
+            .cursor { width: 3vw !important; height: 5vw !important; }
+            .btn-exit { font-size: 4.5vw !important; padding: 2vw 4vw !important; min-height: 12vw !important; }
+            .app-topbar { padding: 2vw 4vw !important; min-height: 14vw !important; font-size: 5vw !important; }
+            .bios-link { font-size: 5vw !important; padding: 3vw 0 !important; min-height: 12vw !important; }
         }
     `;
     document.head.appendChild(style);
