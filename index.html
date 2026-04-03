@@ -7,6 +7,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <script>
+        // Frame-buster para evitar que el "URL Masking" de los proveedores de dominio rompa el responsive
+        try {
+            if (window.top !== window.self) {
+                var ref = document.referrer || '';
+                // Permitir iframes solo si vienen de AI Studio / Google (para que funcione el preview aquí)
+                if (!ref.includes('google.com') && !ref.includes('ai.studio') && !ref.includes('localhost')) {
+                    window.top.location = window.self.location;
+                }
+            }
+        } catch (e) {
+            // Si da error de Cross-Origin, es 100% un frame de otro dominio (URL Cloaking). Rompemos el frame.
+            window.top.location = window.self.location;
+        }
+    </script>
 </head>
 <body>
     <div id="root"></div>

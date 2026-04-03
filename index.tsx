@@ -216,7 +216,7 @@ function renderStyle() {
         .header-line { overflow: hidden; white-space: nowrap; text-overflow: clip; width: 100%; }
 
         /* Tablet & Desktop overrides */
-        @media (min-width: 768px) {
+        @media (min-width: 850px) {
             body, html { font-size: 20px; }
             .grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
             .bios-btn .desc { display: inline; margin-left: 15px; margin-top: 0; font-size: 18px; }
