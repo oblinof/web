@@ -47,6 +47,7 @@ function getMusicContent() {
 
 const apps: AppDefinition[] = [
     // AUDIO TOOLS
+    { id: 'ethernal', name: 'Ethernal', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://ethernal-sage.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'AUDIO TOOLS', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'ambient', name: 'Ambient', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'entity', name: 'Entity', description: 'Collab', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/entity_collab.html" style="width:100%; height:100%; border:0;"></iframe>` },
