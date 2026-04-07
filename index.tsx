@@ -20,7 +20,7 @@ interface AppDefinition {
     id: string;
     name: string;
     description: string;
-    category: 'SYSTEM' | 'MEDIA' | 'TOOLS' | 'XENO';
+    category: 'AUDIO TOOLS' | 'VISUAL TOOLS' | 'MEDIA' | 'SYSTEM';
     color: string;
     content: string | (() => HTMLElement);
 }
@@ -46,8 +46,24 @@ function getMusicContent() {
 }
 
 const apps: AppDefinition[] = [
+    // AUDIO TOOLS
+    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'AUDIO TOOLS', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'ambient', name: 'Ambient', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'entity', name: 'Entity', description: 'Collab', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/entity_collab.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'datafall', name: 'Datafall', description: 'Water Sim', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/datafall.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'wordarp', name: 'WordArp', description: 'Console', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/word_arp.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', category: 'AUDIO TOOLS', color: '#f0f', content: `<iframe src="/ravecat.html" style="width:100%; height:100%; border:0;"></iframe>` },
+
+    // VISUAL TOOLS
+    { id: 'realism', name: 'Realism', description: 'Glitch FX', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="/extractivist_realism.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', category: 'VISUAL TOOLS', color: '#0ff', content: `<iframe src="/paintdelic.html" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+
+    // MEDIA
     { id: 'music', name: 'Music', description: 'Audio Lib', category: 'MEDIA', color: '#0f0', content: getMusicContent },
     { id: 'gallery', name: 'Gallery', description: 'Visuals', category: 'MEDIA', color: '#0f0', content: `<iframe src="https://artviewer.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+
+    // SYSTEM
     { id: 'contact', name: 'Profile', description: 'Player Info', category: 'SYSTEM', color: '#0f0', content: `
         <div class="bios-profile">
             <pre>
@@ -62,15 +78,6 @@ const apps: AppDefinition[] = [
             <a href="https://linktr.ee/oblinof" target="_top" class="bios-link">> NEURAL LINK</a>
         </div>
     ` },
-    { id: 'datafall', name: 'Datafall', description: 'Water Sim', category: 'TOOLS', color: '#0ff', content: `<iframe src="/datafall.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', category: 'TOOLS', color: '#0ff', content: `<iframe src="/paintdelic.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'ambient', name: 'Ambient', description: 'Synth', category: 'TOOLS', color: '#0ff', content: `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'entity', name: 'Entity', description: 'Collab', category: 'TOOLS', color: '#0ff', content: `<iframe src="/entity_collab.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'wordarp', name: 'WordArp', description: 'Console', category: 'TOOLS', color: '#0ff', content: `<iframe src="/word_arp.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'realism', name: 'Realism', description: 'Glitch FX', category: 'XENO', color: '#f0f', content: `<iframe src="/extractivist_realism.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'ravecat', name: 'Ravecat', description: '3D Sim', category: 'XENO', color: '#f0f', content: `<iframe src="/ravecat.html" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'XENO', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'XENO', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'trash', name: 'Trash', description: 'Empty', category: 'SYSTEM', color: '#0f0', content: `<div class="bios-profile"><pre>RECYCLE BIN IS EMPTY.\nSYSTEM CLEAN.</pre></div>` },
 ];
 
@@ -258,7 +265,7 @@ function renderMainMenu() {
     const grid = document.createElement('div');
     grid.className = 'grid';
 
-    const categories = ['SYSTEM', 'MEDIA', 'TOOLS', 'XENO'];
+    const categories = ['AUDIO TOOLS', 'VISUAL TOOLS', 'MEDIA', 'SYSTEM'];
     
     categories.forEach(cat => {
         const catApps = apps.filter(a => a.category === cat);
