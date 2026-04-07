@@ -119,7 +119,7 @@ function renderStyle() {
         #root { width: 100%; height: 100%; }
         
         .container {
-            max-width: 1200px; margin: 0 auto; padding: 0 1rem;
+            padding: 0 1rem;
             width: 100%; height: 100%; position: relative; z-index: 10;
             display: flex; flex-direction: column;
         }
