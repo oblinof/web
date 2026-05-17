@@ -47,6 +47,7 @@ function getMusicContent() {
 
 const apps: AppDefinition[] = [
     // AUDIO TOOLS
+    { id: 'onlyarps', name: 'OnlyArps', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://onlyarps.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'meteodrone', name: 'Meteodrone', description: 'Weather Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://meteodrone.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'ethernal', name: 'Ethernal', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://ethernal-sage.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'geosynth', name: 'Geosynth', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://geosynth-xzg8.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
