@@ -23,6 +23,7 @@ interface AppDefinition {
     category: 'AUDIO TOOLS' | 'VISUAL TOOLS' | 'MEDIA' | 'SYSTEM';
     color: string;
     content: string | (() => HTMLElement);
+    isRainbow?: boolean;
 }
 
 function getMusicContent() {
@@ -64,6 +65,7 @@ const apps: AppDefinition[] = [
     { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
 
     // MEDIA
+    { id: 'micronoise', name: 'Micronoise 101 (new album)', description: 'Album', category: 'MEDIA', color: '#0f0', content: `<iframe src="https://micronoise-kappa.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`, isRainbow: true },
     { id: 'music', name: 'Music', description: 'Audio Lib', category: 'MEDIA', color: '#0f0', content: getMusicContent },
     { id: 'gallery', name: 'Gallery', description: 'Visuals', category: 'MEDIA', color: '#0f0', content: `<iframe src="https://artviewer.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
 
@@ -143,6 +145,15 @@ function renderStyle() {
         .bios-btn .desc { color: var(--text-dim); font-size: 1.1rem; display: block; margin-top: 0.3rem; margin-left: 1.2rem; }
         .bios-btn:hover .desc, .bios-btn:active .desc, .bios-btn:focus .desc { color: var(--highlight-text); }
         
+        @keyframes rainbowHue {
+            0% { filter: hue-rotate(0deg); color: #ff0000; }
+            50% { filter: hue-rotate(180deg); color: #00ffff; }
+            100% { filter: hue-rotate(360deg); color: #ff0000; }
+        }
+        .rainbow-text {
+            animation: rainbowHue 2s linear infinite;
+        }
+
         .boot-screen { padding: 1rem 0; white-space: pre-wrap; word-wrap: break-word; font-size: 1.2rem; }
         .cursor { display: inline-block; width: 10px; height: 1.2em; background: var(--text); animation: blink 1s step-end infinite; vertical-align: bottom; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
@@ -281,7 +292,7 @@ function renderMainMenu() {
         
         catApps.forEach(app => {
             const btn = document.createElement('button');
-            btn.className = 'bios-btn';
+            btn.className = app.isRainbow ? 'bios-btn rainbow-text' : 'bios-btn';
             btn.innerHTML = `> ${app.name} <span class="desc">// ${app.description}</span>`;
             btn.onclick = () => launchApp(app.id, app.name, app.content);
             catDiv.appendChild(btn);
