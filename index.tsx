@@ -63,6 +63,7 @@ const apps: AppDefinition[] = [
     { id: 'realism', name: 'Realism', description: 'Glitch FX', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="/extractivist_realism.html" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'paintdelic', name: 'Paint', description: 'Pixel Art', category: 'VISUAL TOOLS', color: '#0ff', content: `<iframe src="/paintdelic.html" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'sydra', name: 'Sydra', description: 'Genetics', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="https://sydra-byhq.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: '3drug', name: '3Drug', description: '3D Sim', category: 'VISUAL TOOLS', color: '#f0f', content: `<iframe src="https://3d-rug.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`, preserveCase: true },
 
     // MEDIA
     { id: 'micronoise', name: 'Micronoise 101 (new album)', description: 'Album', category: 'MEDIA', color: '#0f0', content: `<iframe src="https://micronoise-kappa.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>`, isRainbow: true },
