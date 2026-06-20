@@ -53,7 +53,7 @@ const apps: AppDefinition[] = [
     { id: 'ethernal', name: 'Ethernal', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://ethernal-sage.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'geosynth', name: 'Geosynth', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://geosynth-xzg8.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'psyballz', name: 'PsyBallz', description: 'Physics', category: 'AUDIO TOOLS', color: '#f0f', content: `<iframe src="https://psyballs.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
-    { id: 'ambient', name: 'Ambient', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://conversation-rope-497.app.ohara.ai" style="width:100%; height:100%; border:0;"></iframe>` },
+    { id: 'ambport', name: 'AmbPort', description: 'Synth', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="https://ambport-2-0.vercel.app/" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'entity', name: 'Entity', description: 'Collab', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/entity_collab.html" style="width:100%; height:100%; border:0;"></iframe>` },
     { id: 'datafall', name: 'Datafall', description: 'Water Sim', category: 'AUDIO TOOLS', color: '#0ff', content: `<iframe src="/datafall.html" style="width:100%; height:100%; border:0;"></iframe>` },
 
